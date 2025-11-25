@@ -1,12 +1,11 @@
 {
   "dependencies": {
-    "react-router-dom": "^7.9.5"
+    "react-router-dom": "^7.9.6"
   },
   "name": "cocha-admin-fe-ext",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

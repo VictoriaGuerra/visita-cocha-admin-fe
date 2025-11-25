@@ -3,6 +3,9 @@ import api from './api'
 import * as mockApi from './mockApi'
 import { BACKEND_ENDPOINTS } from '../config/backendEndpoints'
 
+// Exportar también la nueva API de Visita Cocha
+export * from './visitaCochaApi'
+
 // Variable para decidir si usar backend real
 const useBackend = import.meta.env.VITE_USE_BACKEND === 'true'
 export const USE_BACKEND = useBackend
