@@ -1,0 +1,283 @@
+﻿import React, { useState, useEffect, useContext } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import BaseList from '../../components/UI/BaseList';
+import { AuthContext } from '../../auth/AuthContext';
+import { localStoreApi } from '../../api/localStoreApi';
+import { USE_BACKEND, getContentList, deleteContent } from '../../api';
+import { BACKEND_CAPABILITIES } from '../../config/backendEndpoints';
+import { initializeSampleRestaurants, initializeSampleEvents, initializeSampleHotels, initializeSampleAnnouncements, initializeSamplePoints, initializeSampleFoods, initializeSampleItineraries } from '../../data/sampleData';
+
+const ModuleGenericList = () => {
+  const { moduleType } = useParams();
+  const { user } = useContext(AuthContext);
+  const navigate = useNavigate();
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState('');
+
+  useEffect(() => {
+    const loadData = async () => {
+      if (!moduleType) {
+        navigate('/modules');
+        return;
+      }
+
+      try {
+        let data = [];
+        if (USE_BACKEND) {
+          try {
+            data = await getContentList(moduleType);
+          } catch (e) {
+            console.warn('Fallo obtener datos backend:', e?.message || e);
+            setErr(e?.message || 'Error obteniendo datos del backend');
+            data = [];
+          }
+        } else {
+          data = await localStoreApi.getAll(moduleType);
+          // Semilla sólo modo mock
+          if ((data == null || data.length === 0)) {
+            if (moduleType === 'restaurants') data = initializeSampleRestaurants();
+            if (moduleType === 'events') data = initializeSampleEvents();
+            if (moduleType === 'hotels') data = initializeSampleHotels();
+            if (moduleType === 'announcements') data = initializeSampleAnnouncements();
+            if (moduleType === 'points') data = initializeSamplePoints();
+            if (moduleType === 'foods') data = initializeSampleFoods();
+            if (moduleType === 'itineraries') data = initializeSampleItineraries();
+          }
+        }
+        // Filtrado por rol y acceso granular
+        let visible = data || [];
+        if (user) {
+          const isMantenedor = user.roles?.includes('Mantenedor');
+          const isAdmin = user.roles?.includes('Admin');
+          const isSuper = user.roles?.includes('SuperAdmin');
+          // Mantenedor: limitar a elementos autorizados si se especificaron
+          if (isMantenedor) {
+            const access = user.moduleAccess?.[moduleType];
+            if (access?.elements?.length) {
+              visible = visible.filter(it => access.elements.includes(it.id));
+            } else {
+              // Si no hay elementos asignados, no ve ninguno
+              visible = [];
+            }
+          }
+          // Admin: si tiene lista de elementos específicos, también filtrar (por si se asignó granularmente)
+          if (isAdmin && user.moduleAccess?.[moduleType]?.elements?.length) {
+            visible = visible.filter(it => user.moduleAccess[moduleType].elements.includes(it.id));
+          }
+          // SuperAdmin ve todo
+        }
+        setItems(visible);
+      } catch (error) {
+        console.error('Error loading data:', error);
+        setErr(error?.message || 'Error cargando datos');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [moduleType, navigate]);
+
+  // onEdit se usa tanto para crear (sin id) como para editar (con id)
+  const handleEdit = (id) => {
+    if (!id) {
+      navigate(`/modules/${moduleType}/new`);
+    } else {
+      navigate(`/modules/${moduleType}/edit/${id}`);
+    }
+  };
+
+  const handleView = (id) => {
+    navigate(`/modules/${moduleType}/${id}`);
+  };
+
+  const handleDelete = async (id) => {
+    if (!canDelete) { alert('No tienes permisos para eliminar'); return; }
+    if (window.confirm('¿Está seguro de eliminar este elemento?')) {
+      try {
+        if (USE_BACKEND) {
+          await deleteContent(moduleType, id)
+        } else {
+          await localStoreApi.delete(moduleType, id);
+        }
+        const updatedData = USE_BACKEND ? await getContentList(moduleType) : await localStoreApi.getAll(moduleType);
+        // mantener el mismo filtrado post-eliminación
+        let visible = updatedData || [];
+        if (user) {
+          const isMantenedor = user.roles?.includes('Mantenedor');
+          const isAdmin = user.roles?.includes('Admin');
+          if (isMantenedor) {
+            const access = user.moduleAccess?.[moduleType];
+            if (access?.elements?.length) visible = visible.filter(it => access.elements.includes(it.id));
+            else visible = [];
+          }
+          if (isAdmin && user.moduleAccess?.[moduleType]?.elements?.length) {
+            visible = visible.filter(it => user.moduleAccess[moduleType].elements.includes(it.id));
+          }
+        }
+        setItems(visible);
+      } catch (error) {
+        console.error('Error deleting:', error);
+        alert('Error al eliminar el elemento');
+      }
+    }
+  };
+
+  if (loading) {
+    return <div className="loading">Cargando...</div>;
+  }
+
+  const moduleTitle = {
+    attractions: 'Atracciones Turísticas',
+    restaurants: 'Restaurantes',
+    foods: 'Comidas',
+    itineraries: 'Itinerarios',
+    mainCategories: 'Categorías Principales',
+    announcements: 'Anuncios',
+    points: 'Puntos de Interés'
+  }[moduleType] || moduleType;
+
+  // Columnas específicas para cada módulo
+  const getColumns = () => {
+    switch (moduleType) {
+      case 'attractions':
+        return [
+          { key: 'name', label: 'Nombre' },
+          { key: 'categories', label: 'Categorías', render: (value) => Array.isArray(value) ? value.join(', ') : '-' },
+          { key: 'rating', label: 'Calificación' },
+          { key: 'available', label: 'Disponible', render: (value) => value ? '✓' : '✗' },
+          { key: 'order', label: 'Orden' }
+        ];
+      
+      case 'restaurants':
+        return [
+          { key: 'name', label: 'Nombre' },
+          { key: 'mainCategories', label: 'Categorías', render: (value) => Array.isArray(value) ? value.join(', ') : '-' },
+          { key: 'rating', label: 'Calificación' },
+          { key: 'isFeatured', label: 'Destacado', render: (value) => value ? '★' : '' },
+          { key: 'available', label: 'Disponible', render: (value) => value ? '✓' : '✗' }
+        ];
+      
+      case 'foods':
+        return [
+          { key: 'name', label: 'Nombre' },
+          { key: 'description', label: 'Descripción' },
+          { key: 'ingredients', label: 'Ingredientes', render: (value) => Array.isArray(value) ? value.length : 0 },
+          { key: 'rating', label: 'Calificación' },
+          { key: 'available', label: 'Disponible', render: (value) => value ? '✓' : '✗' },
+          { key: 'order', label: 'Orden' }
+        ];
+      
+      case 'itineraries':
+        return [
+          { key: 'title', label: 'Título' },
+          { key: 'duration', label: 'Duración' },
+          { key: 'active', label: 'Activo', render: (value) => value ? '✓' : '✗' },
+          { key: 'available', label: 'Disponible', render: (value) => value ? '✓' : '✗' },
+          { key: 'order', label: 'Orden' }
+        ];
+      
+      case 'mainCategories':
+        return [
+          { key: 'name', label: 'Nombre' },
+          { key: 'icon', label: 'Icono' },
+          { key: 'isFeatured', label: 'Destacado', render: (value) => value ? '★' : '' },
+          { key: 'available', label: 'Disponible', render: (value) => value ? '✓' : '✗' },
+          { key: 'order', label: 'Orden' }
+        ];
+      case 'events':
+        return [
+          { key: 'name', label: 'Nombre' },
+          { key: 'startDate', label: 'Inicio' },
+          { key: 'endDate', label: 'Fin' },
+          { key: 'venueName', label: 'Lugar' },
+          { key: 'active', label: 'Activo', render: (value) => value ? '✓' : '✗' },
+          { key: 'isFeatured', label: 'Destacado', render: (value) => value ? '★' : '' }
+        ];
+      case 'hotels':
+        return [
+          { key: 'name', label: 'Nombre' },
+          { key: 'stars', label: 'Estrellas' },
+          { key: 'rating', label: 'Calificación' },
+          { key: 'isFeatured', label: 'Destacado', render: (value) => value ? '★' : '' },
+          { key: 'available', label: 'Disponible', render: (value) => value ? '✓' : '✗' }
+        ];
+      case 'announcements':
+        return [
+          { key: 'title', label: 'Título' },
+          { key: 'startDate', label: 'Inicio' },
+          { key: 'endDate', label: 'Fin' },
+          { key: 'active', label: 'Activo', render: (value) => value ? '✓' : '✗' },
+          { key: 'isFeatured', label: 'Destacado', render: (value) => value ? '★' : '' },
+          { key: 'order', label: 'Orden' }
+        ];
+      case 'points':
+        return [
+          { key: 'name', label: 'Nombre' },
+          { key: 'categories', label: 'Categorías', render: (value) => Array.isArray(value) ? value.join(', ') : '-' },
+          { key: 'isFeatured', label: 'Destacado', render: (value) => value ? '★' : '' },
+          { key: 'available', label: 'Disponible', render: (value) => value ? '✓' : '✗' },
+          { key: 'order', label: 'Orden' }
+        ];
+      
+      default:
+        return [
+          { key: 'name', label: 'Nombre' },
+          { key: 'description', label: 'Descripción' },
+          { key: 'available', label: 'Disponible', render: (value) => value ? '✓' : '✗' }
+        ];
+    }
+  };
+
+  // Permisos acción
+  const isSuper = user?.roles?.includes('SuperAdmin');
+  const isAdmin = user?.roles?.includes('Admin');
+  const isMantenedor = user?.roles?.includes('Mantenedor');
+
+  const caps = BACKEND_CAPABILITIES[moduleType] || { create:false, update:false, delete:false }
+  const backendReadOnly = USE_BACKEND && !(caps.create || caps.update || caps.delete)
+  const canDelete = USE_BACKEND ? (caps.delete && (isSuper || isAdmin)) : (isSuper || isAdmin)
+  const canAdd = USE_BACKEND ? (caps.create && (isSuper || isAdmin)) : (isSuper || isAdmin)
+  // Para editar: Super/Admin pueden editar cualquier del listado; Mantenedor solo si el elemento está dentro de su lista
+  const canEditRow = (id) => {
+    if (isSuper || isAdmin) return true;
+    if (isMantenedor) {
+      const allowed = user?.moduleAccess?.[moduleType]?.elements || [];
+      return allowed.includes(id);
+    }
+    return false;
+  };
+
+  const handleSafeEdit = (id) => {
+    if (!id && !canAdd) return; // crear no permitido
+    if (id && !canEditRow(id)) return;
+    handleEdit(id);
+  };
+
+  return (
+    <div className="module-container">
+      <div className="module-header">
+        <h2>{moduleTitle}</h2>
+      </div>
+      {USE_BACKEND && err && (
+        <div className="error-message" style={{ marginBottom: 12 }}>{err}</div>
+      )}
+
+      <BaseList
+        title={moduleTitle}
+        items={items}
+        columns={getColumns()}
+        onView={handleView}
+        onEdit={canAdd ? handleSafeEdit : undefined}
+        onDelete={canDelete ? handleDelete : () => {}}
+        canEdit={canAdd}
+        canDelete={canDelete}
+        canAdd={canAdd}
+        readOnlyReason={backendReadOnly ? 'Backend activo sin soporte de edición para este módulo.' : undefined}
+      />
+    </div>
+  );
+};
+
+export default ModuleGenericList;

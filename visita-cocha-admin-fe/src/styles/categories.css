@@ -1,0 +1,166 @@
+/* Pills para categorías */
+.pill-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.pill {
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border-color, #ddd);
+    background: #fff;
+    color: #333;
+    cursor: pointer;
+    transition: all .15s ease-in-out;
+    font-size: 0.9rem;
+}
+
+.pill:hover { background: #f7f7f7; }
+
+.pill.active {
+    background: var(--primary, #2563eb);
+    color: #fff;
+    border-color: var(--primary, #2563eb);
+}
+
+.pill .icon-thumb {
+    width: 18px;
+    height: 18px;
+    object-fit: cover;
+    border-radius: 50%;
+    margin-right: 6px;
+}
+
+.pill-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    background: #eee;
+}
+.categories-manager {
+    padding: 2rem;
+}
+
+.category-item {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.category-item:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.category-item.dragging {
+    background: var(--white);
+    box-shadow: var(--shadow-lg);
+}
+
+.icon-selector {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.preview-icon {
+    font-size: 1.5rem;
+    color: var(--primary-color);
+}
+
+/* Estilos para la jerarquía de categorías */
+.category-tree {
+    padding-left: 1.5rem;
+}
+
+.category-tree-item {
+    position: relative;
+}
+
+.category-tree-item::before {
+    content: '';
+    position: absolute;
+    left: -1rem;
+    top: 50%;
+    width: 0.75rem;
+    height: 1px;
+    background-color: var(--border-color);
+}
+
+.category-tree-item::after {
+    content: '';
+    position: absolute;
+    left: -1rem;
+    top: 0;
+    height: 100%;
+    width: 1px;
+    background-color: var(--border-color);
+}
+
+.category-tree-item:last-child::after {
+    height: 50%;
+}
+
+/* Indicadores de arrastre */
+.drop-indicator {
+    height: 2px;
+    background-color: var(--primary-color);
+    margin: 0.25rem 0;
+    border-radius: 1px;
+    transition: height 0.2s;
+}
+
+.drop-indicator.active {
+    height: 4px;
+}
+
+/* Formulario de categoría */
+.category-form {
+    position: sticky;
+    top: 1rem;
+}
+
+/* Colores de módulo */
+.module-attraction { color: #3f908e; }
+.module-restaurant { color: #e67e22; }
+.module-event { color: #8e44ad; }
+.module-hotel { color: #2980b9; }
+.module-route { color: #27ae60; }
+.module-point { color: #c0392b; }
+
+/* Animaciones */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(1rem);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.category-item {
+    animation: slideIn 0.3s ease-out;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .categories-manager {
+        padding: 1rem;
+    }
+
+    .category-form {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 90%;
+        max-width: 500px;
+        max-height: 90vh;
+        overflow-y: auto;
+        z-index: 1000;
+        box-shadow: var(--shadow-lg);
+    }
+}

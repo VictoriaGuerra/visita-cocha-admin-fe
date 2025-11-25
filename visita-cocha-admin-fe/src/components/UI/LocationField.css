@@ -1,0 +1,44 @@
+.location-field {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.location-inputs {
+  display: flex;
+  gap: 12px;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.input-group label {
+  margin-bottom: 4px;
+}
+
+.input-group input {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.address-input {
+  width: 100%;
+}
+
+.geolocation-button {
+  padding: 8px 16px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.geolocation-button:hover {
+  background-color: #0056b3;
+}

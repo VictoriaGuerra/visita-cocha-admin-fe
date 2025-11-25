@@ -1,0 +1,68 @@
+.modules-container {
+  padding: 2rem;
+}
+
+.modules-container h2 {
+  margin-bottom: 2rem;
+  color: var(--dark-color);
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.modules-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.module-card {
+  background: var(--white);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: 1px solid var(--border-color);
+}
+
+.module-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.module-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.module-card-header i {
+  color: var(--primary-color);
+  font-size: 1.5rem;
+  margin-right: 1rem;
+}
+
+.module-card h3 {
+  color: var(--dark-color);
+  font-size: 1.25rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+.module-card p {
+  color: var(--secondary-color);
+  margin: 0.5rem 0;
+  font-size: 0.875rem;
+}
+
+.module-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+  font-size: 0.875rem;
+  color: var(--secondary-color);
+}

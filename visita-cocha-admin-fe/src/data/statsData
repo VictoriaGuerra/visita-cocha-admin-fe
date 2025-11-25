@@ -1,0 +1,8 @@
+// src/data/statsData.js
+export const stats = [
+  { module: "Atractivos", count: 12 },
+  { module: "Restaurantes", count: 8 },
+  { module: "Eventos", count: 5 },
+  { module: "Hoteles", count: 4 },
+  { module: "Rutas", count: 3 },
+];
