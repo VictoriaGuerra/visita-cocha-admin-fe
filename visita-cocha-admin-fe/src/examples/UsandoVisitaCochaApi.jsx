@@ -348,24 +348,24 @@ export function EjemploAPIDinamica({ moduleType }) {
   const [items, setItems] = useState([]);
 
   useEffect(() => {
+    const loadItems = async () => {
+      const api = getApiByModuleType(moduleType);
+      
+      if (!api) {
+        console.error('No hay API para el módulo:', moduleType);
+        return;
+      }
+
+      try {
+        const response = await api.getAll();
+        setItems(response.data);
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    };
+    
     loadItems();
   }, [moduleType]);
-
-  const loadItems = async () => {
-    const api = getApiByModuleType(moduleType);
-    
-    if (!api) {
-      console.error('No hay API para el módulo:', moduleType);
-      return;
-    }
-
-    try {
-      const response = await api.getAll();
-      setItems(response.data);
-    } catch (error) {
-      console.error('Error:', error);
-    }
-  };
 
   return (
     <div>
@@ -393,7 +393,7 @@ export function EjemploRestaurantesCRUD() {
     try {
       const res = await restaurantesApi.getAll();
       setRestaurantes(res.data);
-    } catch (err) {
+    } catch {
       alert('Error al cargar restaurantes');
     } finally {
       setLoading(false);
@@ -408,7 +408,7 @@ export function EjemploRestaurantesCRUD() {
       await restaurantesApi.delete(id);
       alert('Restaurante eliminado');
       cargar(); // Recargar lista
-    } catch (err) {
+    } catch {
       alert('Error al eliminar');
     }
   };

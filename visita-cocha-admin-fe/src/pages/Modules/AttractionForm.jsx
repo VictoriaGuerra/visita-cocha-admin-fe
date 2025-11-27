@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { localStoreApi } from '../../api/localStoreApi';
+import * as api from '../../api';
 import '../../styles/common.css';
 import '../../styles/forms.css';
 import '../../styles/categories.css';
@@ -52,43 +52,29 @@ const AttractionForm = () => {
   }, [id]);
 
   useEffect(() => {
-    // Cargar categorías desde categoriesApi
-    import('../../api/categoriesApi').then(({ categoriesApi }) => {
-      categoriesApi.getAll('attractions').then(cats => {
-        if (!cats || cats.length === 0) {
-          import('../../data/sampleData').then(({ initializeAttractionCategories }) => {
-            const seeded = initializeAttractionCategories();
-            setCategoryOptions(seeded);
-          });
-        } else { setCategoryOptions(cats); }
-      });
-      categoriesApi.getAll('main').then(cats => {
-        if (!cats || cats.length === 0) {
-          import('../../data/sampleData').then(({ initializeMainCategoriesSeed }) => {
-            const seeded = initializeMainCategoriesSeed();
-            setMainCategoryOptions(seeded);
-          });
-        } else { setMainCategoryOptions(cats); }
-      });
-    });
+    loadCategories();
   }, []);
 
   const loadAttraction = async () => {
     try {
       setLoading(true);
-      const attractions = await localStoreApi.getAll('attractions');
-      const attraction = attractions.find(a => a.id === id);
-      
-      if (attraction) {
-        setFormData(attraction);
-      } else {
-        setError('Atracción no encontrada');
-      }
+      const attraction = await api.getContentById('attractions', id);
+      setFormData(attraction);
     } catch (err) {
-      console.error('Error loading attraction:', err);
       setError('Error al cargar la atracción');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadCategories = async () => {
+    try {
+      const cats = await api.getContentList('attraction-categories');
+      setCategoryOptions(Array.isArray(cats) ? cats : []);
+      const main = await api.getContentList('main-categories');
+      setMainCategoryOptions(Array.isArray(main) ? main : []);
+    } catch (err) {
+      console.error('Error loading categories:', err);
     }
   };
 
@@ -151,14 +137,13 @@ const AttractionForm = () => {
       setLoading(true);
 
       if (isEdit) {
-        await localStoreApi.update('attractions', id, formData);
+        await api.updateContent('attractions', id, formData);
       } else {
-        await localStoreApi.create('attractions', formData);
+        await api.createContent('attractions', formData);
       }
 
       navigate('/modules/attractions');
     } catch (err) {
-      console.error('Error saving attraction:', err);
       setError('Error al guardar la atracción');
     } finally {
       setLoading(false);

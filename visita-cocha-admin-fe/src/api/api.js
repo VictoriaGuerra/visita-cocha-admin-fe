@@ -17,7 +17,7 @@ try {
   // `import.meta.env` puede no estar disponible en algunos entornos; acceder dentro de try
   const useBackend = env.VITE_USE_BACKEND
   console.info('[api] baseURL:', api.defaults.baseURL, 'VITE_USE_BACKEND=', useBackend, 'DEV=', isDev)
-} catch (e) {
+} catch {
   /* ignore in non-browser environments */
 }
 
@@ -31,12 +31,12 @@ api.interceptors.request.use((config) => {
 // API para atractivos turísticos
 export const fetchTouristAttractions = async () => {
   // Probar varias rutas comunes para distintos backends: español, inglés y con prefijo /api
-  const candidates = ['/atractivos', '/attractions', '/api/atractivos', '/api/attractions']
+  const candidates = ['/attractions', '/atractivos', '/api/attractions', '/api/atractivos']
   for (const path of candidates) {
     try {
       const resp = await api.get(path)
       if (resp && resp.data) return resp.data
-    } catch (err) {
+    } catch {
       // Si es 404/405 u otro error, seguimos probando. Log para depuración.
       // No romper aquí; probaremos la siguiente ruta candidata.
       // console.debug(`[api] fetchTouristAttractions failed for ${path}:`, err?.response?.status || err.message)
@@ -47,22 +47,22 @@ export const fetchTouristAttractions = async () => {
 }
 
 export const fetchTouristAttractionById = async (id) => {
-  const { data } = await api.get(`/atractivos/${id}`) // 👈 cambiado
+  const { data } = await api.get(`/attractions/${id}`) // 👈 cambiado
   return data
 }
 
 export const createTouristAttraction = async (attraction) => {
-  const { data } = await api.post('/atractivos', attraction) // 👈 cambiado
+  const { data } = await api.post('/attractions', attraction) // 👈 cambiado
   return data
 }
 
 export const updateTouristAttraction = async (id, attraction) => {
-  const { data } = await api.put(`/atractivos/${id}`, attraction) // 👈 cambiado
+  const { data } = await api.put(`/attractions/${id}`, attraction) // 👈 cambiado
   return data
 }
 
 export const deleteTouristAttraction = async (id) => {
-  const { data } = await api.delete(`/atractivos/${id}`) // 👈 cambiado
+  const { data } = await api.delete(`/attractions/${id}`) // 👈 cambiado
   return data
 }
 

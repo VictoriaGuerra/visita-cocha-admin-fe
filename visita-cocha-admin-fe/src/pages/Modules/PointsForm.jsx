@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { localStoreApi } from '../../api/localStoreApi';
+import * as api from '../../api';
 import '../../styles/common.css';
 import '../../styles/forms.css';
 import '../../styles/categories.css';
@@ -49,11 +49,9 @@ const PointsForm = () => {
   const loadItem = async () => {
     try {
       setLoading(true);
-      const list = await localStoreApi.getAll('points');
-      const item = list.find(x => x.id === id);
-      if (item) setFormData(item); else setError('Punto no encontrado');
+      const item = await api.getContentById('pois', id);
+      setFormData(item);
     } catch (err) {
-      console.error('Error cargando punto:', err);
       setError('Error al cargar el punto');
     } finally { setLoading(false); }
   };
@@ -90,11 +88,10 @@ const PointsForm = () => {
     if (v) { setError(v); return; }
     try {
       setLoading(true);
-      if (isEdit) await localStoreApi.update('points', id, formData);
-      else await localStoreApi.create('points', formData);
+      if (isEdit) await api.updateContent('pois', id, formData);
+      else await api.createContent('pois', formData);
       navigate('/modules/points');
     } catch (err) {
-      console.error('Error guardando punto:', err);
       setError('Error al guardar el punto');
     } finally { setLoading(false); }
   };

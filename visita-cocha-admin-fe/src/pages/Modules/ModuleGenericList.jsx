@@ -2,10 +2,8 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import BaseList from '../../components/UI/BaseList';
 import { AuthContext } from '../../auth/AuthContext';
-import { localStoreApi } from '../../api/localStoreApi';
 import { USE_BACKEND, getContentList, deleteContent } from '../../api';
 import { BACKEND_CAPABILITIES } from '../../config/backendEndpoints';
-import { initializeSampleRestaurants, initializeSampleEvents, initializeSampleHotels, initializeSampleAnnouncements, initializeSamplePoints, initializeSampleFoods, initializeSampleItineraries } from '../../data/sampleData';
 
 const ModuleGenericList = () => {
   const { moduleType } = useParams();
@@ -24,27 +22,20 @@ const ModuleGenericList = () => {
 
       try {
         let data = [];
-        if (USE_BACKEND) {
-          try {
-            data = await getContentList(moduleType);
-          } catch (e) {
-            console.warn('Fallo obtener datos backend:', e?.message || e);
-            setErr(e?.message || 'Error obteniendo datos del backend');
-            data = [];
-          }
-        } else {
-          data = await localStoreApi.getAll(moduleType);
-          // Semilla sólo modo mock
-          if ((data == null || data.length === 0)) {
-            if (moduleType === 'restaurants') data = initializeSampleRestaurants();
-            if (moduleType === 'events') data = initializeSampleEvents();
-            if (moduleType === 'hotels') data = initializeSampleHotels();
-            if (moduleType === 'announcements') data = initializeSampleAnnouncements();
-            if (moduleType === 'points') data = initializeSamplePoints();
-            if (moduleType === 'foods') data = initializeSampleFoods();
-            if (moduleType === 'itineraries') data = initializeSampleItineraries();
-          }
+        if (!USE_BACKEND) {
+          setErr('🔥 Backend requerido. Configura VITE_USE_BACKEND=true en .env');
+          setLoading(false);
+          return;
         }
+        
+        try {
+          data = await getContentList(moduleType);
+        } catch (e) {
+          console.error('Error obteniendo datos del backend:', e?.message || e);
+          setErr(e?.message || 'Error obteniendo datos del backend. Verifica que el backend esté corriendo en localhost:3000');
+          data = [];
+        }
+        
         // Filtrado por rol y acceso granular
         let visible = data || [];
         if (user) {
@@ -101,7 +92,7 @@ const ModuleGenericList = () => {
         } else {
           await localStoreApi.delete(moduleType, id);
         }
-        const updatedData = USE_BACKEND ? await getContentList(moduleType) : await localStoreApi.getAll(moduleType);
+        const updatedData = await getContentList(moduleType);
         // mantener el mismo filtrado post-eliminación
         let visible = updatedData || [];
         if (user) {

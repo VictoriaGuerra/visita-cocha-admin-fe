@@ -21,20 +21,24 @@ La dependencia `axios` ya está instalada en tu proyecto:
 
 ## ⚙️ Configuración
 
-### Variables de Entorno
-Crea o edita tu archivo `.env` en la raíz del proyecto:
+### ✅ Variables de Entorno REQUERIDAS
+Tu archivo `.env` debe tener:
 
 ```env
-# Backend real (tu proyecto de mejoras)
-VITE_API_BASE_URL=http://localhost:3000
-
-# Habilitar backend real (en lugar de mock)
 VITE_USE_BACKEND=true
+VITE_API_BASE_URL=http://localhost:3000
 ```
 
-### Si tu backend usa otro puerto
-```env
-VITE_API_BASE_URL=http://localhost:4000
+
+**Requisito:** El backend debe estar corriendo en `localhost:3000`
+
+```powershell
+# Terminal 1: Backend
+cd c:\Users\ASUS\Downloads\visita-cocha-be
+npm run start:dev
+
+# Terminal 2: Frontend
+npm run dev
 ```
 
 ---

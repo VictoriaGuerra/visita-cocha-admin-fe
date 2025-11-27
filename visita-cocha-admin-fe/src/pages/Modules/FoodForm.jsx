@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { localStoreApi } from '../../api/localStoreApi';
+import * as api from '../../api';
 import '../../styles/common.css';
 import '../../styles/forms.css';
 
@@ -29,11 +29,9 @@ const FoodForm = () => {
   const loadFood = async () => {
     try {
       setLoading(true);
-      const list = await localStoreApi.getAll('foods');
-      const item = list.find(f => f.id === id);
-      if (item) setFormData(item); else setError('Comida no encontrada');
+      const item = await api.getContentById('foods', id);
+      setFormData(item);
     } catch (err) {
-      console.error('Error cargando comida:', err);
       setError('Error al cargar la comida');
     } finally { setLoading(false); }
   };
@@ -66,11 +64,10 @@ const FoodForm = () => {
     if (v) { setError(v); return; }
     try {
       setLoading(true);
-      if (isEdit) await localStoreApi.update('foods', id, formData);
-      else await localStoreApi.create('foods', formData);
+      if (isEdit) await api.updateContent('foods', id, formData);
+      else await api.createContent('foods', formData);
       navigate('/modules/foods');
     } catch (err) {
-      console.error('Error guardando comida:', err);
       setError('Error al guardar la comida');
     } finally { setLoading(false); }
   };
