@@ -22,6 +22,7 @@ import CategoriesManager from './pages/Modules/CategoriesManager';
 import FirstPasswordChangeModal from './components/Auth/FirstPasswordChangeModal';
 import PasswordReset from './pages/Auth/PasswordReset';
 import Emails from './pages/Dev/Emails';
+import TransportRoutes from './pages/TransportRoutes';
 
 const AuthenticatedContent = () => {
   const { user } = useContext(AuthContext);
@@ -41,6 +42,7 @@ const AuthenticatedContent = () => {
     <Layout>
       <FirstPasswordChangeModal />
       <Routes>
+        <Route path="/admin/transport-routes" element={<TransportRoutes />} />
         <Route path="/" element={<Dashboard />} />
   <Route path="/users" element={isSuper ? <UsersList /> : <Navigate to="/" replace />} />
   <Route path="/users/new" element={isSuper ? <UserForm onClose={() => window.history.back()} /> : <Navigate to="/" replace />} />
