@@ -50,14 +50,20 @@ export default function Login() {
     setError('');
     setLoading(true);
     try {
-      const success = await login(email, password);
-      if (success) {
-        navigate('/');
-      } else {
-        setError('Credenciales inválidas');
-      }
+      await login(email, password);
+      navigate('/');
     } catch (err) {
-      setError('Error al intentar iniciar sesión');
+      console.error('Error en login:', err);
+      const status = err?.response?.status;
+      if (status === 401) {
+        setError('Credenciales inválidas. Verifica tu email y contraseña.');
+      } else if (status === 404) {
+        setError('Servicio de autenticación no encontrado. Verifica que el backend esté corriendo.');
+      } else if (err?.message) {
+        setError(err.message);
+      } else {
+        setError('Error al intentar iniciar sesión. Intenta nuevamente.');
+      }
     } finally {
       setLoading(false);
     }

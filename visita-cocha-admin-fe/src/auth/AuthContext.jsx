@@ -30,25 +30,55 @@ export const AuthProvider = ({ children }) => {
   // async login using mockApi
   const login = async (email, password) => {
     try{
-      await api.authLogin(email, password)
-      // Preferimos /auth/me si existe; si no, caemos a listado y filtramos por email
-      let newUser = null
-      try {
-        const me = await api.getMe(email)
-        if (me) newUser = me
-      } catch {}
-      if (!newUser){
-        const users = await api.getUsers()
-        const u = users.find(x => x.email === email)
-        newUser = u ? { ...u } : { email, name: email, roles: ['SuperAdmin'] }
+      const loginData = await api.authLogin(email, password)
+      // El backend devuelve el usuario en loginData.usuario, usarlo directamente
+      let newUser = loginData?.usuario
+      // Si el backend no devolvió usuario en el login, intentar obtenerlo
+      if (!newUser) {
+        console.log('[AuthContext] Login no devolvió usuario, intentando /user/me')
+        try {
+          const me = await api.getMe()
+          if (me) newUser = me
+        } catch (err) {
+          console.log('[AuthContext] /user/me falló:', err.message)
+        }
       }
+      // Si aún no tenemos usuario, intentar obtener del listado
+      if (!newUser){
+        try {
+          const users = await api.getUsers()
+          const u = users.find(x => x.email === email)
+          newUser = u ? { ...u } : null
+        } catch (err) {
+          console.log('[AuthContext] No se pudo obtener usuario desde /user', err.message)
+        }
+      }
+      // Fallback: crear usuario básico
+      if (!newUser) {
+        newUser = { email, name: email, roles: ['SuperAdmin'] }
+      }
+      // Normalizar roles: convertir 'role' o 'rol' singular en 'roles' array
+      if (newUser && !newUser.roles) {
+        const singleRole = newUser.role || newUser.rol;
+        if (singleRole) {
+          newUser.roles = Array.isArray(singleRole) ? singleRole : [singleRole];
+        } else {
+          newUser.roles = ['SuperAdmin']; // fallback por defecto
+        }
+      }
+      // Mapear debe_cambiar_password a mustChangePassword para el frontend
+      if (newUser && newUser.debe_cambiar_password !== undefined) {
+        newUser.mustChangePassword = newUser.debe_cambiar_password;
+      }
+      console.log('[AuthContext] Usuario autenticado:', { email: newUser.email, roles: newUser.roles, mustChangePassword: newUser.mustChangePassword });
       setUser(newUser)
       // We no longer persist sessions across reloads to force login every time
       // localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(newUser))
       return true
     }catch(e){
-      console.log('Login fallido', e)
-      return false
+      console.error('Login fallido:', e)
+      // Re-lanzar el error para que el componente Login pueda mostrarlo
+      throw e
     }
   }
 

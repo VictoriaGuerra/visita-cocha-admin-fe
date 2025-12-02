@@ -50,7 +50,26 @@ const PointsForm = () => {
     try {
       setLoading(true);
       const item = await api.getContentById('pois', id);
-      setFormData(item);
+      
+      // Mapear del backend (español) al frontend (inglés)
+      setFormData({
+        name: item.nombre || '',
+        description: item.descripcion || '',
+        coverUrl: item.imagen || '',
+        available: item.disponible ?? true,
+        isFeatured: false,
+        categories: item.categorias || [],
+        mainCategories: item.tags || [],
+        location: { 
+          address: item.ubicacion?.direccion || '', 
+          coords: { 
+            lat: item.ubicacion?.coords?.lat || '', 
+            lng: item.ubicacion?.coords?.lng || '' 
+          } 
+        },
+        contact: { phone: '', mail: '', link: '' },
+        order: 0
+      });
     } catch (err) {
       setError('Error al cargar el punto');
     } finally { setLoading(false); }
@@ -86,13 +105,35 @@ const PointsForm = () => {
     setError(null);
     const v = validate();
     if (v) { setError(v); return; }
+    
+    // Convertir al formato que espera el backend (español)
+    const payload = {
+      nombre: formData.name,
+      descripcion: formData.description || '',
+      imagen: formData.coverUrl || '',
+      categorias: formData.categories || [],
+      tags: formData.mainCategories || [],
+      direccion: formData.location?.address || '',
+      barrio: '',
+      ciudad: '',
+      pais: '',
+      horario: '',
+      costo_entrada: 0,
+      moneda: 'BOB',
+      gratis: true,
+      actividades: [],
+      recomendaciones: [],
+      disponible: formData.available !== false
+    };
+    
     try {
       setLoading(true);
-      if (isEdit) await api.updateContent('pois', id, formData);
-      else await api.createContent('pois', formData);
+      if (isEdit) await api.updateContent('pois', id, payload);
+      else await api.createContent('pois', payload);
       navigate('/modules/points');
     } catch (err) {
-      setError('Error al guardar el punto');
+      console.error('Error guardando POI:', err);
+      setError('Error al guardar el punto: ' + (err.response?.data?.message || err.message));
     } finally { setLoading(false); }
   };
 
@@ -137,7 +178,7 @@ const PointsForm = () => {
             <label>Categorías</label>
             <div className="pill-group">
               {categoryOptions.map(cat => {
-                const active = formData.categories.includes(cat.id);
+                const active = (formData.categories || []).includes(cat.id);
                 return (
                   <button type="button" key={cat.id} className={`pill ${active ? 'active' : ''}`} onClick={() => toggleCategory(cat.id, 'categories')} title={cat.id}>
                     {cat.name}
@@ -150,7 +191,7 @@ const PointsForm = () => {
             <label>Categorías Principales</label>
             <div className="pill-group">
               {mainCategoryOptions.map(cat => {
-                const active = formData.mainCategories.includes(cat.id);
+                const active = (formData.mainCategories || []).includes(cat.id);
                 return (
                   <button type="button" key={cat.id} className={`pill ${active ? 'active' : ''}`} onClick={() => toggleCategory(cat.id, 'mainCategories')} title={cat.name}>
                     {cat.name}

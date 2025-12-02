@@ -4,6 +4,7 @@
 const makeKey = (type) => ({
   attractions: 'vc_cats_attractions_v1',
   restaurants: 'vc_cats_restaurants_v1',
+  pois: 'vc_cats_pois_v1',
   main: 'vc_cats_main_v1'
 }[type] || `vc_cats_${type}_v1`);
 

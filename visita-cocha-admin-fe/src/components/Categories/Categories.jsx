@@ -78,195 +78,232 @@ const Categories = () => {
     if (!editingCategory) return null;
 
     return (
-      <div className="category-form card">
-        <div className="card-header">
-          <h3 className="text-lg font-semibold">
-            {editingCategory.id ? 'Editar Categoría' : 'Nueva Categoría'}
-          </h3>
-        </div>
-        <div className="card-body">
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            handleSaveCategory(editingCategory);
-          }}>
-            <div className="form-group">
-              <label className="form-label">Nombre</label>
+      <div style={{background:'#fff', borderRadius:'12px', padding:'20px', boxShadow:'0 1px 3px rgba(0,0,0,0.1)'}}>
+        <h3 style={{fontSize: 16, fontWeight: 600, marginBottom: 16}}>
+          {editingCategory.id ? 'Editar Categoría' : 'Nueva Categoría'}
+        </h3>
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          handleSaveCategory(editingCategory);
+        }}>
+          <div className="form-group">
+            <label className="form-label">Nombre</label>
+            <input
+              type="text"
+              className="form-control"
+              value={editingCategory.name}
+              onChange={(e) => setEditingCategory({
+                ...editingCategory,
+                name: e.target.value
+              })}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Descripción</label>
+            <textarea
+              className="form-control"
+              value={editingCategory.description}
+              onChange={(e) => setEditingCategory({
+                ...editingCategory,
+                description: e.target.value
+              })}
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Módulo</label>
+            <select
+              className="form-control"
+              value={editingCategory.moduleType}
+              onChange={(e) => setEditingCategory({
+                ...editingCategory,
+                moduleType: e.target.value
+              })}
+              required
+            >
+              <option value="">Seleccionar módulo</option>
+              {Object.entries(MODULE_TYPES).map(([key, type]) => (
+                <option key={key} value={key}>
+                  {type.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Ícono</label>
+            <div className="icon-selector">
               <input
                 type="text"
                 className="form-control"
-                value={editingCategory.name}
+                value={editingCategory.icon}
                 onChange={(e) => setEditingCategory({
                   ...editingCategory,
-                  name: e.target.value
+                  icon: e.target.value
                 })}
-                required
+                placeholder="fa-icon-name"
               />
+              <i className={`fas ${editingCategory.icon} preview-icon`}></i>
             </div>
+          </div>
 
-            <div className="form-group">
-              <label className="form-label">Descripción</label>
-              <textarea
-                className="form-control"
-                value={editingCategory.description}
-                onChange={(e) => setEditingCategory({
-                  ...editingCategory,
-                  description: e.target.value
-                })}
-              />
-            </div>
+          <div className="form-group">
+            <label className="form-label">Categoría Padre</label>
+            <select
+              className="form-control"
+              value={editingCategory.parentId || ''}
+              onChange={(e) => setEditingCategory({
+                ...editingCategory,
+                parentId: e.target.value || null
+              })}
+            >
+              <option value="">Sin categoría padre</option>
+              {categories.map(cat => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
-            <div className="form-group">
-              <label className="form-label">Módulo</label>
-              <select
-                className="form-control"
-                value={editingCategory.moduleType}
-                onChange={(e) => setEditingCategory({
-                  ...editingCategory,
-                  moduleType: e.target.value
-                })}
-                required
-              >
-                <option value="">Seleccionar módulo</option>
-                {Object.entries(MODULE_TYPES).map(([key, type]) => (
-                  <option key={key} value={key}>
-                    {type.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Ícono</label>
-              <div className="icon-selector">
-                <input
-                  type="text"
-                  className="form-control"
-                  value={editingCategory.icon}
-                  onChange={(e) => setEditingCategory({
-                    ...editingCategory,
-                    icon: e.target.value
-                  })}
-                  placeholder="fa-icon-name"
-                />
-                <i className={`fas ${editingCategory.icon} preview-icon`}></i>
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Categoría Padre</label>
-              <select
-                className="form-control"
-                value={editingCategory.parentId || ''}
-                onChange={(e) => setEditingCategory({
-                  ...editingCategory,
-                  parentId: e.target.value || null
-                })}
-              >
-                <option value="">Sin categoría padre</option>
-                {categories.map(cat => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex justify-end gap-2 mt-4">
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => setEditingCategory(null)}
-              >
-                Cancelar
-              </button>
-              <button type="submit" className="btn btn-primary">
-                Guardar
-              </button>
-            </div>
-          </form>
-        </div>
+          <div style={{display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16}}>
+            <button
+              type="button"
+              style={{
+                padding: '8px 16px',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px',
+                background: '#fff',
+                cursor: 'pointer'
+              }}
+              onClick={() => setEditingCategory(null)}
+            >
+              Cancelar
+            </button>
+            <button 
+              type="submit" 
+              style={{
+                padding: '8px 16px',
+                background: '#3f908e',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: 600
+              }}
+            >
+              Guardar
+            </button>
+          </div>
+        </form>
       </div>
     );
   };
 
-  if (loading) return <div className="loading">Cargando categorías...</div>;
-  if (error) return <div className="error-message">{error}</div>;
+  if (loading) return (
+    <div className="module-container">
+      <div className="loading">Cargando categorías...</div>
+    </div>
+  );
+  
+  if (error) return (
+    <div className="module-container">
+      <div className="error-message">{error}</div>
+    </div>
+  );
 
   return (
-    <div className="categories-manager">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Gestión de Categorías</h1>
+    <div className="module-container">
+      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
+        <h2 style={{margin: 0, fontSize: '18px', fontWeight: 600}}>Gestión de Categorías</h2>
         <button
-          className="btn btn-primary"
+          style={{
+            padding: '10px 20px',
+            background: '#3f908e',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}
           onClick={handleAddCategory}
         >
-          <i className="fas fa-plus mr-2"></i>
+          <i className="fas fa-plus"></i>
           Nueva Categoría
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="categories-list card">
-          <div className="card-body">
-            <DragDropContext onDragEnd={handleDragEnd}>
-              <Droppable droppableId="categories">
-                {(provided) => (
-                  <div
-                    {...provided.droppableProps}
-                    ref={provided.innerRef}
-                    className="space-y-2"
-                  >
-                    {categories.map((category, index) => (
-                      <Draggable
-                        key={category.id}
-                        draggableId={category.id.toString()}
-                        index={index}
-                      >
-                        {(provided) => (
-                          <div
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            {...provided.dragHandleProps}
-                            className="category-item"
-                          >
-                            <div className="flex items-center p-3 bg-white rounded-lg shadow">
-                              <i className={`fas ${category.icon} text-primary mr-3`}></i>
-                              <div className="flex-1">
-                                <h3 className="font-semibold">{category.name}</h3>
-                                <p className="text-sm text-gray-600">
-                                  {MODULE_TYPES[category.moduleType]?.name}
-                                </p>
-                              </div>
-                              <div className="flex gap-2">
-                                <button
-                                  className="btn btn-ghost btn-sm"
-                                  onClick={() => setEditingCategory(category)}
-                                >
-                                  <i className="fas fa-edit"></i>
-                                </button>
-                                <button
-                                  className="btn btn-ghost btn-sm text-danger"
-                                  onClick={() => {
-                                    if (confirm('¿Eliminar esta categoría?')) {
-                                      categoriesAPI.delete(category.id)
-                                        .then(loadCategories);
-                                    }
-                                  }}
-                                >
-                                  <i className="fas fa-trash"></i>
-                                </button>
-                              </div>
-                            </div>
+      <div style={{display: 'grid', gridTemplateColumns: editingCategory ? '1fr 1fr' : '1fr', gap: '20px'}}>
+        <div style={{background:'#fff', borderRadius:'12px', padding:'20px', boxShadow:'0 1px 3px rgba(0,0,0,0.1)'}}>
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <Droppable droppableId="categories">
+              {(provided) => (
+                <div
+                  {...provided.droppableProps}
+                  ref={provided.innerRef}
+                  style={{display: 'flex', flexDirection: 'column', gap: '8px'}}
+                >
+                  {categories.map((category, index) => (
+                    <Draggable
+                      key={category.id}
+                      draggableId={category.id.toString()}
+                      index={index}
+                    >
+                      {(provided) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          {...provided.dragHandleProps}
+                          style={{
+                            ...provided.draggableProps.style,
+                            display: 'flex',
+                            alignItems: 'center',
+                            padding: '12px',
+                            background: '#f9fafb',
+                            borderRadius: '8px',
+                            border: '1px solid #e5e7eb'
+                          }}
+                        >
+                          <i className={`fas ${category.icon}`} style={{color: '#3f908e', marginRight: 12, fontSize: 18}}></i>
+                          <div style={{flex: 1}}>
+                            <h3 style={{margin: 0, fontWeight: 600, fontSize: 14}}>{category.name}</h3>
+                            <p style={{margin: 0, fontSize: 12, color: '#6b7280'}}>
+                              {MODULE_TYPES[category.moduleType]?.name}
+                            </p>
                           </div>
-                        )}
-                      </Draggable>
-                    ))}
-                    {provided.placeholder}
-                  </div>
-                )}
-              </Droppable>
-            </DragDropContext>
-          </div>
+                          <div style={{display:'flex', gap:'12px'}}>
+                            <i
+                              className="fas fa-edit"
+                              onClick={() => setEditingCategory(category)}
+                              style={{cursor:'pointer', fontSize:'18px'}}
+                              title="Editar"
+                            ></i>
+                            <i
+                              className="fas fa-trash"
+                              onClick={() => {
+                                if (confirm('¿Eliminar esta categoría?')) {
+                                  categoriesAPI.delete(category.id)
+                                    .then(loadCategories);
+                                }
+                              }}
+                              style={{cursor:'pointer', fontSize:'18px'}}
+                              title="Eliminar"
+                            ></i>
+                          </div>
+                        </div>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+          </DragDropContext>
         </div>
 
         {renderCategoryForm()}

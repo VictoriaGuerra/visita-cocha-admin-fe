@@ -65,7 +65,7 @@ export const comidasApi = {
   getAll: () => api.get('/foods'),
   getById: (id) => api.get(`/foods/${id}`),
   create: (data) => api.post('/foods', data),
-  update: (id, data) => api.patch(`/foods/${id}`, data),
+  update: (id, data) => api.put(`/foods/${id}`, data),
   delete: (id) => api.delete(`/foods/${id}`),
 };
 
@@ -86,11 +86,25 @@ export const puntosApi = {
 };
 
 export const rutasApi = {
-  getAll: () => api.get('/routes'),
-  getById: (id) => api.get(`/routes/${id}`),
-  create: (data) => api.post('/routes', data),
-  update: (id, data) => api.patch(`/routes/${id}`, data),
-  delete: (id) => api.delete(`/routes/${id}`),
+  getAll: () => api.get('/rutas'),
+  getById: (id) => api.get(`/rutas/${id}`),
+  create: (data) => api.post('/rutas', data),
+  update: (id, data) => api.put(`/rutas/${id}`, data),
+  delete: (id) => api.delete(`/rutas/${id}`),
+};
+
+export const transportRoutesApi = {
+  getAll: () => api.get('/transport-routes'),
+  getById: (id) => api.get(`/transport-routes/${id}`),
+  create: (data) => api.post('/transport-routes', data),  // SIN headers, el navegador lo maneja
+  update: (id, data) => {
+    // Si data es FormData, NO establecer Content-Type manualmente
+    if (data instanceof FormData) {
+      return api.patch(`/transport-routes/${id}`, data);
+    }
+    return api.patch(`/transport-routes/${id}`, data);
+  },
+  delete: (id) => api.delete(`/transport-routes/${id}`),
 };
 
 export const attractionCategoriesApi = {
@@ -146,6 +160,7 @@ export function getApiByModuleType(moduleType) {
     announcements: anunciosApi,
     pois: puntosApi,
     routes: rutasApi,
+    'transport-routes': transportRoutesApi,
     'attraction-categories': attractionCategoriesApi,
     'restaurant-categories': restaurantCategoriesApi,
     'main-categories': mainCategoriesApi,

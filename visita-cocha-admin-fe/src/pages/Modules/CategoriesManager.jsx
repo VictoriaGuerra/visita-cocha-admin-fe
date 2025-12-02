@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState, useContext } from 'react';
 import { AuthContext } from '../../auth/AuthContext';
+import { isSuperAdmin, isAdmin } from '../../utils/roleUtils';
 import { categoriesApi } from '../../api/categoriesApi';
 import '../../styles/categories.css';
 import { initializeAttractionCategories, initializeRestaurantCategories, initializeMainCategoriesSeed } from '../../data/sampleData';
@@ -8,32 +9,40 @@ import '../../styles/common.css';
 const TYPES = [
   { key: 'attractions', label: 'Categorías de Atracciones' },
   { key: 'restaurants', label: 'Categorías de Restaurantes' },
-  { key: 'main', label: 'Categorías Principales' }
+  { key: 'pois', label: 'Categorías de Puntos de Interés (POI)' }
 ];
 
 const ensureSeed = (type) => {
   if (type === 'attractions') return initializeAttractionCategories();
   if (type === 'restaurants') return initializeRestaurantCategories();
+  if (type === 'pois') return [
+    { id: 'universidades', name: 'Universidades', order: 1, available: true, icon: 'bi-mortarboard-fill', description: 'Instituciones de educación superior' },
+    { id: 'consulados', name: 'Consulados', order: 2, available: true, icon: 'bi-flag-fill', description: 'Representaciones consulares' },
+    { id: 'policia', name: 'Policía', order: 3, available: true, icon: 'bi-shield-fill-check', description: 'Estaciones de policía' },
+    { id: 'hospitales', name: 'Hospitales', order: 4, available: true, icon: 'bi-hospital', description: 'Centros de salud y hospitales' },
+    { id: 'bancos', name: 'Bancos', order: 5, available: true, icon: 'bi-bank', description: 'Entidades bancarias' }
+  ];
   if (type === 'main') return initializeMainCategoriesSeed();
   return [];
 };
 
 const emptyItem = (type) => ({
   id: '', name: '', order: 0, available: true,
+  ...(type === 'pois' ? { icon: '', description: '' } : {}),
   ...(type === 'main' ? { icon: '', photoUrl: '', isFeatured: false } : {})
 });
 
 export default function CategoriesManager(){
   const { user } = useContext(AuthContext);
-  const canDelete = user?.roles?.includes('SuperAdmin') || user?.roles?.includes('Admin');
+  const canDelete = isSuperAdmin(user) || isAdmin(user);
   const [type, setType] = useState('attractions');
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [form, setForm] = useState(emptyItem('attractions'));
   const [editingId, setEditingId] = useState(null);
-
   const isMain = useMemo(()=> type === 'main', [type]);
+  const isPoi = useMemo(()=> type === 'pois', [type]);
 
   const load = async (t) => {
     setLoading(true);
@@ -89,111 +98,233 @@ export default function CategoriesManager(){
 
   return (
     <div className="module-container">
-      <div className="module-header">
-        <h2>Gestor de Categorías</h2>
+      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
+        <h2 style={{margin: 0, fontSize: '18px', fontWeight: 600}}>Gestor de Categorías</h2>
       </div>
 
-      <div className="card" style={{ marginBottom: 16 }}>
-        <div className="card-header">
-          <div className="pill-group">
-            {TYPES.map(t => (
-              <button
-                key={t.key}
-                className={`pill ${type === t.key ? 'active' : ''}`}
-                onClick={() => setType(t.key)}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="card-body">
-          {error && <div className="alert alert-danger">{error}</div>}
-
-          <div className="form-row" style={{ gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-            <div className="form-group">
-              <label htmlFor="id">ID</label>
-              <input id="id" name="id" value={form.id} onChange={handleChange} className="form-control" placeholder="ej: popular" />
-            </div>
-            <div className="form-group">
-              <label htmlFor="name">Nombre</label>
-              <input id="name" name="name" value={form.name} onChange={handleChange} className="form-control" />
-            </div>
-            <div className="form-group">
-              <label htmlFor="order">Orden</label>
-              <input id="order" name="order" type="number" value={form.order} onChange={handleChange} className="form-control" />
-            </div>
-            <div className="form-group">
-              <label><input type="checkbox" name="available" checked={!!form.available} onChange={handleChange} /> Disponible</label>
-            </div>
-            {isMain && (
-              <>
-                <div className="form-group">
-                  <label htmlFor="icon">Icono</label>
-                  <input id="icon" name="icon" value={form.icon || ''} onChange={handleChange} className="form-control" placeholder="ion-icon name" />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="photoUrl">Foto URL</label>
-                  <input id="photoUrl" name="photoUrl" value={form.photoUrl || ''} onChange={handleChange} className="form-control" placeholder="https://..." />
-                </div>
-                <div className="form-group">
-                  <label><input type="checkbox" name="isFeatured" checked={!!form.isFeatured} onChange={handleChange} /> Destacado</label>
-                </div>
-              </>
-            )}
-            <div className="form-group">
-              <button className="btn btn-primary" onClick={save}>{editingId ? 'Actualizar' : 'Agregar'}</button>
-              {editingId && <button className="btn btn-secondary" style={{ marginLeft: 8 }} onClick={cancelEdit}>Cancelar</button>}
-            </div>
-          </div>
-        </div>
+      {/* Tabs */}
+      <div style={{display: 'flex', gap: '8px', marginBottom: '20px', borderBottom: '2px solid #e5e7eb', paddingBottom: '8px'}}>
+        {TYPES.map(t => (
+          <button
+            key={t.key}
+            onClick={() => setType(t.key)}
+            style={{
+              padding: '8px 16px',
+              background: type === t.key ? '#3f908e' : 'transparent',
+              color: type === t.key ? '#fff' : '#6b7280',
+              border: 'none',
+              borderRadius: '6px 6px 0 0',
+              cursor: 'pointer',
+              fontWeight: type === t.key ? 600 : 400,
+              transition: 'all 0.2s'
+            }}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
-      <div className="card">
-        <div className="card-header">
-          <h3>Listado</h3>
-        </div>
-        <div className="card-body p-0">
-          {loading ? (
-            <div className="loading">Cargando...</div>
-          ) : (
-            <div className="table-container">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Nombre</th>
-                    {isMain && <th>Icono</th>}
-                    {isMain && <th>Foto</th>}
-                    <th>Orden</th>
-                    <th>Disponible</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map(it => (
-                    <tr key={it.id}>
-                      <td>{it.id}</td>
-                      <td>{it.name}</td>
-                      {isMain && <td>{it.icon || '-'}</td>}
-                      {isMain && <td>{it.photoUrl ? <a href={it.photoUrl} target="_blank" rel="noreferrer">ver</a> : '-'}</td>}
-                      <td>{it.order ?? 0}</td>
-                      <td>{it.available ? <span className="pill-badge" style={{background:'#d1fae5', color:'#065f46'}}>Disponible</span> : <span className="pill-badge" style={{background:'#fee2e2', color:'#991b1b'}}>No</span>}</td>
-                      <td>
-                        <div className="flex gap-2">
-                          <button className="btn btn-primary btn-sm" onClick={() => startEdit(it)}><i className="fas fa-edit"></i></button>
-                          {canDelete && (
-                            <button className="btn btn-danger btn-sm" onClick={() => remove(it.id)}><i className="fas fa-trash"></i></button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+      {error && <div className="alert alert-danger" style={{marginBottom: 16}}>{error}</div>}
+
+      {/* Formulario */}
+      <div style={{background:'#fff', borderRadius:'12px', padding:'20px', boxShadow:'0 1px 3px rgba(0,0,0,0.1)', marginBottom: 20}}>
+        <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, alignItems: 'flex-end'}}>
+          <div className="form-group">
+            <label htmlFor="id" style={{display: 'block', marginBottom: 4, fontSize: 14, fontWeight: 500}}>ID</label>
+            <input 
+              id="id" 
+              name="id" 
+              value={form.id} 
+              onChange={handleChange} 
+              className="form-control" 
+              placeholder="ej: popular"
+              style={{width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 6}}
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="name" style={{display: 'block', marginBottom: 4, fontSize: 14, fontWeight: 500}}>Nombre</label>
+            <input 
+              id="name" 
+              name="name" 
+              value={form.name} 
+              onChange={handleChange} 
+              className="form-control"
+              style={{width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 6}}
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="order" style={{display: 'block', marginBottom: 4, fontSize: 14, fontWeight: 500}}>Orden</label>
+            <input 
+              id="order" 
+              name="order" 
+              type="number" 
+              value={form.order} 
+              onChange={handleChange} 
+              className="form-control"
+              style={{width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 6}}
+            />
+          </div>
+          <div className="form-group">
+            <label style={{display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer'}}>
+              <input type="checkbox" name="available" checked={!!form.available} onChange={handleChange} />
+              <span style={{fontSize: 14, fontWeight: 500}}>Disponible</span>
+            </label>
+          </div>
+          {isPoi && (
+            <>
+              <div className="form-group">
+                <label htmlFor="icon" style={{display: 'block', marginBottom: 4, fontSize: 14, fontWeight: 500}}>Icono (Bootstrap)</label>
+                <input 
+                  id="icon" 
+                  name="icon" 
+                  value={form.icon || ''} 
+                  onChange={handleChange} 
+                  className="form-control" 
+                  placeholder="bi-icon-name"
+                  style={{width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 6}}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="description" style={{display: 'block', marginBottom: 4, fontSize: 14, fontWeight: 500}}>Descripción</label>
+                <input 
+                  id="description" 
+                  name="description" 
+                  value={form.description || ''} 
+                  onChange={handleChange} 
+                  className="form-control" 
+                  placeholder="Breve descripción"
+                  style={{width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 6}}
+                />
+              </div>
+            </>
           )}
+          {isMain && (
+            <>
+              <div className="form-group">
+                <label htmlFor="icon" style={{display: 'block', marginBottom: 4, fontSize: 14, fontWeight: 500}}>Icono</label>
+                <input 
+                  id="icon" 
+                  name="icon" 
+                  value={form.icon || ''} 
+                  onChange={handleChange} 
+                  className="form-control" 
+                  placeholder="ion-icon name"
+                  style={{width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 6}}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="photoUrl" style={{display: 'block', marginBottom: 4, fontSize: 14, fontWeight: 500}}>Foto URL</label>
+                <input 
+                  id="photoUrl" 
+                  name="photoUrl" 
+                  value={form.photoUrl || ''} 
+                  onChange={handleChange} 
+                  className="form-control" 
+                  placeholder="https://..."
+                  style={{width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 6}}
+                />
+              </div>
+              <div className="form-group">
+                <label style={{display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer'}}>
+                  <input type="checkbox" name="isFeatured" checked={!!form.isFeatured} onChange={handleChange} />
+                  <span style={{fontSize: 14, fontWeight: 500}}>Destacado</span>
+                </label>
+              </div>
+            </>
+          )}
+          <div className="form-group" style={{display: 'flex', gap: 8}}>
+            <button 
+              onClick={save}
+              style={{
+                padding: '10px 20px',
+                background: '#3f908e',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: 600
+              }}
+            >
+              {editingId ? 'Actualizar' : 'Agregar'}
+            </button>
+            {editingId && (
+              <button 
+                onClick={cancelEdit}
+                style={{
+                  padding: '10px 20px',
+                  background: '#6b7280',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: 600
+                }}
+              >
+                Cancelar
+              </button>
+            )}
+          </div>
         </div>
+      </div>
+
+      {/* Tabla */}
+      <div style={{background:'#fff', borderRadius:'12px', padding:'20px', boxShadow:'0 1px 3px rgba(0,0,0,0.1)'}}>
+        <h3 style={{margin: '0 0 16px 0', fontSize: 16, fontWeight: 600}}>Listado</h3>
+        {loading ? (
+          <div className="loading">Cargando...</div>
+        ) : (
+          <div style={{overflowX: 'auto'}}>
+            <table style={{width:'100%', borderCollapse:'collapse'}}>
+              <thead style={{background:'#e0f2f1'}}>
+                <tr>
+                  <th style={{padding:'12px', textAlign:'left', fontWeight:600}}>ID</th>
+                  <th style={{padding:'12px', textAlign:'left', fontWeight:600}}>Nombre</th>
+                  {isMain && <th style={{padding:'12px', textAlign:'left', fontWeight:600}}>Icono</th>}
+                  {isMain && <th style={{padding:'12px', textAlign:'left', fontWeight:600}}>Foto</th>}
+                  <th style={{padding:'12px', textAlign:'center', fontWeight:600}}>Orden</th>
+                  <th style={{padding:'12px', textAlign:'center', fontWeight:600}}>Disponible</th>
+                  <th style={{padding:'12px', textAlign:'center', fontWeight:600}}>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map(it => (
+                  <tr key={it.id} style={{borderBottom:'1px solid #e5e7eb'}}>
+                    <td style={{padding:'12px'}}>{it.id}</td>
+                    <td style={{padding:'12px'}}><strong>{it.name}</strong></td>
+                    {isMain && <td style={{padding:'12px'}}>{it.icon || '-'}</td>}
+                    {isMain && <td style={{padding:'12px'}}>{it.photoUrl ? <a href={it.photoUrl} target="_blank" rel="noreferrer" style={{color: '#3f908e', textDecoration: 'underline'}}>ver</a> : '-'}</td>}
+                    <td style={{padding:'12px', textAlign:'center'}}>{it.order ?? 0}</td>
+                    <td style={{padding:'12px', textAlign:'center'}}>
+                      {it.available ? (
+                        <span style={{background:'#d1fae5', color:'#065f46', padding:'4px 8px', borderRadius:'4px', fontSize:'14px'}}>Sí</span>
+                      ) : (
+                        <span style={{background:'#fee2e2', color:'#991b1b', padding:'4px 8px', borderRadius:'4px', fontSize:'14px'}}>No</span>
+                      )}
+                    </td>
+                    <td style={{padding:'12px', textAlign:'center'}}>
+                      <div style={{display:'flex', gap:'12px', justifyContent:'center'}}>
+                        <i 
+                          className="fas fa-edit" 
+                          onClick={() => startEdit(it)}
+                          title="Editar"
+                          style={{cursor:'pointer', fontSize:'18px'}}
+                        ></i>
+                        {canDelete && (
+                          <i 
+                            className="fas fa-trash" 
+                            onClick={() => remove(it.id)}
+                            title="Eliminar"
+                            style={{cursor:'pointer', fontSize:'18px'}}
+                          ></i>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

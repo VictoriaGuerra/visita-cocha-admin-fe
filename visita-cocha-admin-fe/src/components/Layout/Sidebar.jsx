@@ -1,6 +1,7 @@
 import React, { useContext } from 'react';
 import { NavLink } from 'react-router-dom';
 import { AuthContext } from '../../auth/AuthContext';
+import { isSuperAdmin, isAdmin } from '../../utils/roleUtils';
 import './Sidebar.css';
 import logo from '../../assets/images/logo.png';
 
@@ -39,6 +40,16 @@ const Sidebar = () => {
       icon: 'fa-route',
     },
     {
+      title: 'Rutas Turísticas',
+      path: '/modules/routes',
+      icon: 'fa-map-marked-alt',
+    },
+    {
+      title: 'Rutas de Transporte',
+      path: '/transport-routes',
+      icon: 'fa-bus',
+    },
+    {
       title: 'Eventos',
       path: '/modules/events',
       icon: 'fa-calendar-alt',
@@ -70,15 +81,10 @@ const Sidebar = () => {
       superAdminOnly: true,
     },
     {
-      title: 'Correos',
-      path: '/emails',
-      icon: 'fa-envelope',
-      adminOnly: true,
-    },
-    {
       title: 'Configuración',
       path: '/settings',
       icon: 'fa-cog',
+      superAdminOnly: true,
     },
   ];
 
@@ -95,8 +101,8 @@ const Sidebar = () => {
       <nav className="sidebar-nav">
         {menuItems.map((item) => {
           const canSee = item.superAdminOnly
-            ? (user?.roles?.includes('SuperAdmin'))
-            : (!item.adminOnly || (user?.roles && (user.roles.includes('SuperAdmin') || user.roles.includes('Admin'))));
+            ? isSuperAdmin(user)
+            : (!item.adminOnly || isSuperAdmin(user) || isAdmin(user));
           if (!canSee) return null;
           return (
             <NavLink

@@ -61,6 +61,27 @@ export const MODULE_TYPES = {
     ]
   },
 
+  ROUTES: {
+    id: 'routes',
+    name: 'Rutas Turísticas',
+    icon: 'fa-map-marked-alt',
+    fields: [
+      { name: 'nombre', type: 'text', required: true, label: 'Nombre' },
+      { name: 'descripcion', type: 'textarea', required: true, label: 'Descripción' },
+      { name: 'coverUrl', type: 'url', label: 'URL de imagen de portada' },
+      { name: 'disponible', type: 'checkbox', label: 'Disponible', defaultValue: true },
+      { name: 'destacado', type: 'checkbox', label: 'Destacado', defaultValue: false },
+      { name: 'orden', type: 'number', label: 'Orden de visualización' },
+      { name: 'hoteles', type: 'array', label: 'Hoteles (IDs)' },
+      { name: 'restaurantes', type: 'array', label: 'Restaurantes (IDs)' },
+      { name: 'pois', type: 'array', label: 'POIs (IDs)' },
+      { name: 'duracionEstimada', type: 'text', label: 'Duración estimada' },
+      { name: 'distanciaKm', type: 'number', label: 'Distancia (km)' },
+      { name: 'dificultad', type: 'text', label: 'Dificultad' },
+      { name: 'etiquetas', type: 'array', label: 'Etiquetas' }
+    ]
+  },
+
   MAIN_CATEGORIES: {
     id: 'mainCategories',
     name: 'Categorías Principales',

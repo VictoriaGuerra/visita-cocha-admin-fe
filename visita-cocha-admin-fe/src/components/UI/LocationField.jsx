@@ -1,11 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './LocationField.css';
 
-const LocationField = ({ value = { lat: '', lng: '', address: '' }, onChange }) => {
+const LocationField = ({ value = { coords: { lat: '', lng: '' }, address: '' }, onChange }) => {
   const [location, setLocation] = useState(value);
 
+  useEffect(() => {
+    setLocation(value);
+  }, [value]);
+
   const handleChange = (field, newValue) => {
-    const updatedLocation = { ...location, [field]: newValue };
+    let updatedLocation;
+    
+    if (field === 'lat' || field === 'lng') {
+      updatedLocation = {
+        ...location,
+        coords: {
+          ...location.coords,
+          [field]: newValue
+        }
+      };
+    } else {
+      updatedLocation = { ...location, [field]: newValue };
+    }
+    
     setLocation(updatedLocation);
     onChange(updatedLocation);
   };
@@ -14,13 +31,23 @@ const LocationField = ({ value = { lat: '', lng: '', address: '' }, onChange }) 
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          handleChange('lat', position.coords.latitude.toString());
-          handleChange('lng', position.coords.longitude.toString());
+          const updatedLocation = {
+            ...location,
+            coords: {
+              lat: position.coords.latitude.toString(),
+              lng: position.coords.longitude.toString()
+            }
+          };
+          setLocation(updatedLocation);
+          onChange(updatedLocation);
         },
         (error) => {
-          console.error('Error getting location:', error);
+          console.error('Error obteniendo ubicación:', error);
+          alert('No se pudo obtener la ubicación. Verifica los permisos del navegador.');
         }
       );
+    } else {
+      alert('Tu navegador no soporta geolocalización');
     }
   };
 
@@ -31,18 +58,18 @@ const LocationField = ({ value = { lat: '', lng: '', address: '' }, onChange }) 
           <label>Latitud:</label>
           <input
             type="text"
-            value={location.lat}
+            value={location.coords?.lat || ''}
             onChange={(e) => handleChange('lat', e.target.value)}
-            placeholder="Latitud"
+            placeholder="-17.3895"
           />
         </div>
         <div className="input-group">
           <label>Longitud:</label>
           <input
             type="text"
-            value={location.lng}
+            value={location.coords?.lng || ''}
             onChange={(e) => handleChange('lng', e.target.value)}
-            placeholder="Longitud"
+            placeholder="-66.1568"
           />
         </div>
       </div>
@@ -50,14 +77,14 @@ const LocationField = ({ value = { lat: '', lng: '', address: '' }, onChange }) 
         <label>Dirección:</label>
         <input
           type="text"
-          value={location.address}
+          value={location.address || ''}
           onChange={(e) => handleChange('address', e.target.value)}
-          placeholder="Dirección"
+          placeholder="Av. Heroínas 123, Cochabamba"
           className="address-input"
         />
       </div>
       <button type="button" onClick={handleGeolocation} className="geolocation-button">
-        Obtener Ubicación Actual
+        📍 Obtener Ubicación Actual
       </button>
     </div>
   );

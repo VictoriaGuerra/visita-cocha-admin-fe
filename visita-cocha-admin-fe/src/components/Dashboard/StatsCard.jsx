@@ -11,33 +11,72 @@ import Tooltip from '../../components/Tooltip';
 // - tooltip: optional string to show on hover
 // - index: optional number to stagger entrance animation
 export default function StatsCard({ title, value, icon = null, variant = "green", tooltip = '', index = 0 }) {
-  const allowed = ["green", "orange", "red", "purple"];
-  const v = allowed.includes(variant) ? variant : "green";
+  // Paleta de colores para variantes
+  const palette = {
+    green: { bg: '#4ade80', fg: '#fff' },
+    purple: { bg: '#a78bfa', fg: '#fff' },
+    orange: { bg: '#fbbf24', fg: '#fff' },
+    red: { bg: '#fb7185', fg: '#fff' },
+    blue: { bg: '#60a5fa', fg: '#fff' },
+    teal: { bg: '#2dd4bf', fg: '#fff' },
+    yellow: { bg: '#fde047', fg: '#222' },
+    pink: { bg: '#f472b6', fg: '#fff' },
+    default: { bg: '#e5e7eb', fg: '#222' }
+  };
+  const v = palette[variant] || palette.default;
 
   const formatted = typeof value === 'number' ? formatNumber(value) : value;
-
   const delay = typeof index === 'number' ? `${index * 80}ms` : undefined;
 
   return (
-    <div className={`stat-card stat-enter`} style={{ minWidth: 140, display: "flex", alignItems: "center", justifyContent: "center", animationDelay: delay }}>
-      <div style={{ display: "flex", alignItems: "center" }}>
-        {icon && (
-          <div className={`stat-icon-bg ${v}`} aria-hidden>
-            <span className="stat-icon">{icon}</span>
-          </div>
-        )}
-
-        <div className="stat-content" style={{ textAlign: icon ? "left" : "center" }}>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <p className="stat-label">{title}</p>
-            {tooltip && (
-              <Tooltip text={tooltip}>
-                <span className="stat-tooltip" aria-hidden>ℹ</span>
-              </Tooltip>
-            )}
-          </div>
-          <p className="stat-count">{formatted}</p>
+    <div
+      className="stat-card stat-enter"
+      style={{
+        minWidth: 180,
+        minHeight: 100,
+        background: '#fff',
+        borderRadius: 18,
+        boxShadow: '0 2px 8px rgba(63,144,142,0.07)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 18,
+        padding: '18px 28px',
+        animationDelay: delay,
+        marginBottom: 0,
+        position: 'relative',
+        transition: 'box-shadow 0.18s',
+      }}
+    >
+      {icon && (
+        <div
+          style={{
+            background: v.bg,
+            color: v.fg,
+            borderRadius: '50%',
+            width: 54,
+            height: 54,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 30,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
+            flexShrink: 0,
+          }}
+          aria-hidden
+        >
+          {icon}
         </div>
+      )}
+      <div className="stat-content" style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span className="stat-label" style={{ fontWeight: 600, fontSize: 17, color: '#444', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</span>
+          {tooltip && (
+            <Tooltip text={tooltip}>
+              <span className="stat-tooltip" aria-hidden style={{ color: '#888', fontSize: 16, marginLeft: 2, cursor: 'pointer' }}>ℹ</span>
+            </Tooltip>
+          )}
+        </div>
+        <div style={{ fontWeight: 700, fontSize: 32, color: '#222', marginTop: 2 }}>{formatted}</div>
       </div>
     </div>
   );
