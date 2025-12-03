@@ -1,25 +1,31 @@
 // src/pages/Users/UserForm.jsx
 import React, { useState, useEffect, useContext } from 'react'
+import { useParams, useLocation, useNavigate } from 'react-router-dom'
 import * as api from '../../api'
 import { MODULE_TYPES } from '../../config/moduleTypes'
 import { AuthContext } from '../../auth/AuthContext'
 
-export default function UserForm({ editing, onClose }){
+export default function UserForm(){
+  const { id } = useParams()
+  const location = useLocation()
+  const navigate = useNavigate()
+  const isView = location.pathname.includes('/view/')
+  const isEdit = Boolean(id) && !isView
   const { user: currentUser } = useContext(AuthContext)
+  
+  const handleClose = () => navigate('/users')
 
   // Campos del formulario
-  const [nombre, setNombre] = useState(editing?.nombre || '')
-  const [lastname, setLastname] = useState(editing?.lastname || '')
-  const [email, setEmail] = useState(editing?.email || '')
-  const [ci, setCi] = useState(editing?.ci || '')
-  const [department, setDepartment] = useState(editing?.department || '')
-  const [phone, setPhone] = useState(editing?.phone || '')
-  // Ya no se pide contraseña manualmente
-  const [role, setRole] = useState(editing?.role || '')
-  const [status, setStatus] = useState(editing?.status || 'active')
-  // Eliminado: mustChangePassword, ahora lo maneja el backend por defecto
-  const [permissions, setPermissions] = useState(editing?.permissions || [])
-  const [moduleAccess, setModuleAccess] = useState(editing?.moduleAccess || {})
+  const [nombre, setNombre] = useState('')
+  const [lastname, setLastname] = useState('')
+  const [email, setEmail] = useState('')
+  const [ci, setCi] = useState('')
+  const [department, setDepartment] = useState('')
+  const [phone, setPhone] = useState('')
+  const [role, setRole] = useState('')
+  const [status, setStatus] = useState('active')
+  const [permissions, setPermissions] = useState([])
+  const [moduleAccess, setModuleAccess] = useState({})
 
   const [availableModules, setAvailableModules] = useState([])
   const [error, setError] = useState(null)
@@ -31,8 +37,48 @@ export default function UserForm({ editing, onClose }){
     // Cargar módulos desde la configuración central (ids coinciden con rutas)
     const mods = Object.values(MODULE_TYPES || {}).map(m => ({ id: m.id, name: m.name }))
     if (mounted) setAvailableModules(mods)
+    
+    // Solo cargar datos si hay un ID válido (no undefined, no null, no cadena vacía)
+    if (id && id !== 'new' && (isEdit || isView)) {
+      loadUser()
+    } else {
+      // Si no hay ID o es 'new', limpiar el formulario
+      if (mounted) {
+        setNombre('')
+        setLastname('')
+        setEmail('')
+        setCi('')
+        setDepartment('')
+        setPhone('')
+        setRole('')
+        setStatus('active')
+        setPermissions([])
+        setModuleAccess({})
+        setError(null)
+      }
+    }
+    
     return () => { mounted = false }
-  }, [])
+  }, [id, isEdit, isView])
+  
+  const loadUser = async () => {
+    try {
+      const userData = await api.getUserById(id)
+      setNombre(userData.nombre || '')
+      setLastname(userData.lastname || '')
+      setEmail(userData.email || '')
+      setCi(userData.ci || '')
+      setDepartment(userData.department || '')
+      setPhone(userData.phone || '')
+      setRole(userData.role || '')
+      setStatus(userData.status || 'active')
+      setPermissions(userData.permissions || [])
+      setModuleAccess(userData.moduleAccess || {})
+    } catch (err) {
+      console.error('Error cargando usuario:', err)
+      setError('Error al cargar el usuario')
+    }
+  }
 
   const toggleModule = (modId) => {
     setModuleAccess(prev => {
@@ -65,20 +111,15 @@ export default function UserForm({ editing, onClose }){
         rol: role,
         estado: status,
         phone,
-        // debe_cambiar_password eliminado, el backend lo pone en true por defecto
         permissions
       };
-      if (!editing) {
-        // Generar un id único para el usuario nuevo
-        payload.id = `u-${Date.now()}`;
-        // No se envía password, el backend la genera automáticamente
-      }
-      if (editing) {
-        await api.updateUser(editing._id, payload);
-        onClose();
+      
+      if (isEdit) {
+        await api.updateUser(id, payload);
+        handleClose();
       } else {
-        const res = await api.createUser(payload);
-        setCreated(res?.tempPassword || true);
+        await api.createUser(payload);
+        setCreated(true); // Ya no se devuelve tempPassword del backend
       }
     } catch(err) {
       setError(err.message || 'Error');
@@ -102,9 +143,10 @@ export default function UserForm({ editing, onClose }){
   return (
     <div className="vc-modal-overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 80 }}>
       <div className="form-card" style={{ width: '100%', maxWidth: 720, background: '#fff', borderRadius: 16, boxShadow: '0 8px 32px rgba(0,0,0,0.10)', padding: '2rem', position: 'relative' }}>
-        <h2 style={{ fontWeight: 700, fontSize: 22, marginBottom: 18, color: '#25636f' }}>{editing ? 'Editar usuario' : 'Crear usuario'}</h2>
+        <h2 style={{ fontWeight: 700, fontSize: 22, marginBottom: 18, color: '#25636f' }}>{isView ? 'Ver usuario' : isEdit ? 'Editar usuario' : 'Crear usuario'}</h2>
 
         <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 18 }}>
+          <fieldset disabled={isView} style={{ border: 'none', padding: 0, margin: 0 }}>
           {/* Row: nombre / lastname */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -188,16 +230,20 @@ export default function UserForm({ editing, onClose }){
           {error && <div style={{ color: '#dc2626', marginBottom: 8 }}>{error}</div>}
 
           {created && (
-            <div style={{ background:'#ecfdf5', color:'#065f46', padding:'8px 10px', borderRadius:8, marginBottom:8 }}>
-              Usuario creado. Credenciales temporales:<br/>
-              <strong>Usuario:</strong> {email}<br/>
-              <strong>Contraseña temporal:</strong> {created === true ? '—' : created}
+            <div style={{ background:'#ecfdf5', color:'#065f46', padding:'12px 16px', borderRadius:8, marginBottom:8, border: '1px solid #a7f3d0' }}>
+              <strong>✅ Usuario creado exitosamente</strong><br/><br/>
+              Se han enviado las credenciales de acceso al correo:<br/>
+              <strong style={{ fontSize: '16px' }}>{email}</strong><br/><br/>
+              <span style={{ fontSize: '14px', color: '#047857' }}>
+                ⚠️ El usuario debe revisar su bandeja de entrada (y spam) para obtener su contraseña temporal.
+              </span>
             </div>
           )}
+          </fieldset>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 10 }}>
-            <button type="button" onClick={onClose} className="btn" style={{ padding: '10px 22px', borderRadius: 8, border: 'none', background: '#e0f2f1', color: '#25636f', fontWeight: 600, fontSize: 16, cursor: 'pointer' }}>{created ? 'Cerrar' : 'Cancelar'}</button>
-            {!created && <button type="submit" disabled={saving} className="btn btn-primary" style={{ padding: '10px 22px', borderRadius: 8, border: 'none', background: '#3f908e', color: '#fff', fontWeight: 700, fontSize: 16, cursor: 'pointer' }}>{saving ? 'Guardando...' : (editing ? 'Guardar' : 'Crear')}</button>}
+            <button type="button" onClick={handleClose} className="btn" style={{ padding: '10px 22px', borderRadius: 8, border: 'none', background: '#e0f2f1', color: '#25636f', fontWeight: 600, fontSize: 16, cursor: 'pointer' }}>{isView ? 'Cerrar' : created ? 'Cerrar' : 'Cancelar'}</button>
+            {!isView && !created && <button type="submit" disabled={saving} className="btn btn-primary" style={{ padding: '10px 22px', borderRadius: 8, border: 'none', background: '#3f908e', color: '#fff', fontWeight: 700, fontSize: 16, cursor: 'pointer' }}>{saving ? 'Guardando...' : (isEdit ? 'Guardar' : 'Crear')}</button>}
           </div>
         </form>
       </div>

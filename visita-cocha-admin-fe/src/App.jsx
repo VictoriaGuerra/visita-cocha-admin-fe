@@ -51,8 +51,9 @@ const AuthenticatedContent = () => {
       <Routes>
         <Route path="/" element={<Dashboard />} />
   <Route path="/users" element={isSuperAdminRole ? <UsersList /> : <Navigate to="/" replace />} />
-  <Route path="/users/new" element={isSuperAdminRole ? <UserForm onClose={() => window.history.back()} /> : <Navigate to="/" replace />} />
-  <Route path="/users/edit/:id" element={isSuperAdminRole ? <UserForm onClose={() => window.history.back()} /> : <Navigate to="/" replace />} />
+  <Route path="/users/new" element={isSuperAdminRole ? <UserForm /> : <Navigate to="/" replace />} />
+  <Route path="/users/edit/:id" element={isSuperAdminRole ? <UserForm /> : <Navigate to="/" replace />} />
+  <Route path="/users/view/:id" element={isSuperAdminRole ? <UserForm /> : <Navigate to="/" replace />} />
         <Route path="/modules" element={<ModulesList />} />
   <Route path="/modules/configuracion" element={<ConfigPage />} />
   <Route path="/settings" element={<ConfigPage />} />
@@ -65,19 +66,25 @@ const AuthenticatedContent = () => {
   <Route path="/transport-routes/edit/:id" element={<TransportRouteForm />} />
   <Route path="/transport-routes/view/:id" element={<TransportRouteForm />} />
   
-        <Route path="/modules/:moduleType" element={<ModuleGenericList />} />
+  {/* Rutas específicas de formularios - DEBEN IR ANTES de las genéricas */}
   <Route path="/modules/attractions/new" element={<AttractionForm />} />
   <Route path="/modules/attractions/edit/:id" element={<AttractionForm />} />
+  <Route path="/modules/attractions/view/:id" element={<AttractionForm />} />
   <Route path="/modules/restaurants/new" element={<RestaurantForm />} />
   <Route path="/modules/restaurants/edit/:id" element={<RestaurantForm />} />
+  <Route path="/modules/restaurants/view/:id" element={<RestaurantForm />} />
   <Route path="/modules/events/new" element={<EventForm />} />
   <Route path="/modules/events/edit/:id" element={<EventForm />} />
+  <Route path="/modules/events/view/:id" element={<EventForm />} />
   <Route path="/modules/hotels/new" element={<HotelForm />} />
   <Route path="/modules/hotels/edit/:id" element={<HotelForm />} />
+  <Route path="/modules/hotels/view/:id" element={<HotelForm />} />
   <Route path="/modules/announcements/new" element={<AnnouncementForm />} />
   <Route path="/modules/announcements/edit/:id" element={<AnnouncementForm />} />
+  <Route path="/modules/announcements/view/:id" element={<AnnouncementForm />} />
   <Route path="/modules/points/new" element={<PoiForm />} />
   <Route path="/modules/points/edit/:id" element={<PoiForm />} />
+  <Route path="/modules/points/view/:id" element={<PoiForm />} />
   <Route path="/modules/foods/new" element={<FoodForm />} />
   <Route path="/modules/foods/edit/:id" element={<FoodForm />} />
   <Route path="/modules/foods/view/:id" element={<FoodForm />} />
@@ -88,10 +95,14 @@ const AuthenticatedContent = () => {
   <Route path="/modules/routes/edit/:id" element={<RouteForm />} />
   <Route path="/modules/routes/view/:id" element={<RouteForm />} />
   <Route path="/modules/categories" element={<CategoriesManager />} />
+  
+  {/* Rutas genéricas - DEBEN IR AL FINAL */}
+  <Route path="/modules/:moduleType" element={<ModuleGenericList />} />
+  <Route path="/modules/:moduleType/new" element={<ModuleForm />} />
+  <Route path="/modules/:moduleType/:id/edit" element={<ModuleForm />} />
+  
   <Route path="/emails" element={<Emails />} />
-        <Route path="/modules/:moduleType/new" element={<ModuleForm />} />
-        <Route path="/modules/:moduleType/:id/edit" element={<ModuleForm />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+  <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Layout>
   );

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import * as api from '../../api';
 import '../../styles/common.css';
 import '../../styles/forms.css';
@@ -8,7 +8,9 @@ import '../../styles/categories.css';
 const AttractionForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const isEdit = Boolean(id);
+  const location = useLocation();
+  const isView = location.pathname.includes('/view/');
+  const isEdit = Boolean(id) && !isView;
 
   console.log('🆔 ID desde URL params:', id);
   console.log('📝 Modo de edición:', isEdit);
@@ -48,10 +50,10 @@ const AttractionForm = () => {
 
   useEffect(() => {
     loadCategories();
-    if (isEdit && id) {
+    if ((isEdit || isView) && id) {
       loadAttraction();
     }
-  }, [id, isEdit]);
+  }, [id, isEdit, isView]);
 
   const loadAttraction = async () => {
     try {
@@ -285,7 +287,7 @@ const AttractionForm = () => {
           >
             ← Volver a la lista
           </button>
-          <h2>{isEdit ? 'Editar Atracción Turística' : 'Nueva Atracción Turística'}</h2>
+          <h2>{isView ? 'Ver Atracción Turística' : isEdit ? 'Editar Atracción Turística' : 'Nueva Atracción Turística'}</h2>
         </div>
       </div>
 
@@ -296,6 +298,7 @@ const AttractionForm = () => {
       )}
 
       <form onSubmit={handleSubmit} className="attraction-form">
+        <fieldset disabled={isView} style={{ border: 'none', padding: 0, margin: 0 }}>
         {/* Información básica */}
         <div className="form-section">
           <h3>Información Básica</h3>
@@ -581,12 +584,15 @@ const AttractionForm = () => {
         {/* Botones de acción */}
         <div className="form-actions">
           <button type="button" onClick={handleCancel} className="btn btn-secondary">
-            Cancelar
+            {isView ? 'Volver' : 'Cancelar'}
           </button>
-          <button type="submit" disabled={loading} className="btn btn-primary">
-            {loading ? 'Guardando...' : (isEdit ? 'Actualizar' : 'Crear')}
-          </button>
+          {!isView && (
+            <button type="submit" disabled={loading} className="btn btn-primary">
+              {loading ? 'Guardando...' : (isEdit ? 'Actualizar' : 'Crear')}
+            </button>
+          )}
         </div>
+        </fieldset>
       </form>
     </div>
   );

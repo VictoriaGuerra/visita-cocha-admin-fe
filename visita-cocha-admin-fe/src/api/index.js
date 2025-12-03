@@ -116,6 +116,12 @@ export async function getUsers() {
   return Array.isArray(data) ? data : []
 }
 
+export async function getUserById(id) {
+  if (!useBackend) throw new Error('Backend requerido')
+  const data = await callApiMethod('get', `/user/${id}`)
+  return data
+}
+
 export async function createUser(payload) {
   if (!useBackend) throw new Error('Backend requerido')
   const data = await callApiMethod('post', '/user', payload)
@@ -131,8 +137,11 @@ export async function updateUser(id, patch) {
 export async function deleteUser(id) {
   if (!useBackend) throw new Error('Backend requerido')
   const data = await callApiMethod('delete', `/user/${id}`)
-  return data || { ok: true }
+  return data
 }
+
+// Export hotel categories API
+export { hotelCategoriesApi } from './hotelCategoriesApi'
 
 /* PASSWORD RESET - NO implementado en backend actual */
 
@@ -157,9 +166,12 @@ export async function resetPassword(email, token, newPassword) {
 }
 
 export async function completeInitialPasswordSetup(email, newPassword) {
-  // Usa axios para llamar al endpoint real del backend
-  const res = await api.post('/user/complete-initial-password', { email, newPassword });
-  return res.data;
+  if (!useBackend) throw new Error('Backend requerido')
+  // Enviar email y newPassword porque el endpoint no usa autenticación JWT
+  const data = await callApiMethod('post', '/auth/password/initial', { email, newPassword })
+  // El backend devuelve token nuevo, actualizarlo
+  if (data?.token) localStorage.setItem('access_token', data.token)
+  return data
 }
 
 /* MODULES */

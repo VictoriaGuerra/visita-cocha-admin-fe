@@ -1,9 +1,11 @@
 import React, { useState } from 'react'
+import HotelCategories from '../../components/HotelCategories/HotelCategories'
 import '../../styles/common.css'
 import '../../components/Modules/ModuleForm.css'
 import '../../styles/forms.css'
 
 export default function ConfigPage() {
+  const [activeTab, setActiveTab] = useState('settings') // 'settings' | 'hotelCategories'
   const [saving, setSaving] = useState(false)
   const [success, setSuccess] = useState('')
   const [error, setError] = useState('')
@@ -77,7 +79,49 @@ export default function ConfigPage() {
         <h2>⚙️ Configuración del Sistema</h2>
       </div>
 
-      <form onSubmit={handleSave} className="module-form">
+      {/* Tabs */}
+      <div style={{
+        display: 'flex',
+        gap: '10px',
+        marginBottom: '20px',
+        borderBottom: '2px solid #e5e7eb',
+        paddingBottom: '10px'
+      }}>
+        <button
+          onClick={() => setActiveTab('settings')}
+          style={{
+            padding: '10px 20px',
+            background: activeTab === 'settings' ? 'linear-gradient(135deg, #3f908e 0%, #2d6a69 100%)' : '#f3f4f6',
+            color: activeTab === 'settings' ? 'white' : '#374151',
+            border: 'none',
+            borderRadius: '8px',
+            fontWeight: '600',
+            cursor: 'pointer',
+            transition: 'all 0.3s'
+          }}
+        >
+          ⚙️ Configuración General
+        </button>
+        <button
+          onClick={() => setActiveTab('hotelCategories')}
+          style={{
+            padding: '10px 20px',
+            background: activeTab === 'hotelCategories' ? 'linear-gradient(135deg, #3f908e 0%, #2d6a69 100%)' : '#f3f4f6',
+            color: activeTab === 'hotelCategories' ? 'white' : '#374151',
+            border: 'none',
+            borderRadius: '8px',
+            fontWeight: '600',
+            cursor: 'pointer',
+            transition: 'all 0.3s'
+          }}
+        >
+          🏨 Categorías de Hoteles
+        </button>
+      </div>
+
+      {/* Tab: Configuración General */}
+      {activeTab === 'settings' && (
+        <form onSubmit={handleSave} className="module-form">
         {error && (
           <div className="alert alert-danger" style={{
             background: '#fee2e2',
@@ -401,6 +445,12 @@ export default function ConfigPage() {
           </button>
         </div>
       </form>
+      )}
+
+      {/* Tab: Categorías de Hoteles */}
+      {activeTab === 'hotelCategories' && (
+        <HotelCategories />
+      )}
     </div>
   )
 }

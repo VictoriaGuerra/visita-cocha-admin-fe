@@ -19,7 +19,7 @@ const ModuleGenericList = () => {
     return data.map(item => {
       const mapped = {
         ...item,
-        id: item._id || item.id // Usar _id como id si existe
+        id: item._id || item.id || item.slug // Usar _id como id si existe
       };
       
       // Mapeo específico para eventos (backend en español → frontend en inglés)
@@ -81,6 +81,7 @@ const ModuleGenericList = () => {
             console.log('[ModuleGenericList] Primer item:', data[0]);
             console.log('[ModuleGenericList] Claves del primer item:', Object.keys(data[0]));
             console.log('[ModuleGenericList] _id del primer item:', data[0]._id);
+            console.log('[ModuleGenericList] _id tipo:', typeof data[0]._id, 'valor:', JSON.stringify(data[0]._id));
             console.log('[ModuleGenericList] id mapeado del primer item:', data[0].id);
             console.log('[ModuleGenericList] Slug:', data[0].slug);
           }
@@ -190,7 +191,9 @@ const ModuleGenericList = () => {
     itineraries: 'Itinerarios',
     mainCategories: 'Categorías Principales',
     announcements: 'Anuncios',
-    points: 'Puntos de Interés'
+    points: 'Puntos de Interés',
+    events: 'Eventos',
+    hotels: 'Hoteles'
   }[moduleType] || moduleType;
 
   // Columnas específicas para cada módulo
@@ -247,15 +250,13 @@ const ModuleGenericList = () => {
           { key: 'startDate', label: 'Inicio' },
           { key: 'endDate', label: 'Fin' },
           { key: 'venueName', label: 'Lugar' },
-          { key: 'active', label: 'Activo', render: (value) => value ? '✓' : '✗' },
-          { key: 'isFeatured', label: 'Destacado', render: (value) => value ? '★' : '' }
+          { key: 'active', label: 'Activo', render: (value) => value ? '✓' : '✗' }
         ];
       case 'hotels':
         return [
           { key: 'name', label: 'Nombre' },
           { key: 'stars', label: 'Estrellas' },
           { key: 'rating', label: 'Calificación' },
-          { key: 'isFeatured', label: 'Destacado', render: (value) => value ? '★' : '' },
           { key: 'available', label: 'Disponible', render: (value) => value ? '✓' : '✗' }
         ];
       case 'announcements':
@@ -329,9 +330,6 @@ const ModuleGenericList = () => {
 
   return (
     <div className="module-container">
-      <div className="module-header">
-        <h2>{moduleTitle}</h2>
-      </div>
       {USE_BACKEND && err && (
         <div className="error-message" style={{ marginBottom: 12 }}>{err}</div>
       )}

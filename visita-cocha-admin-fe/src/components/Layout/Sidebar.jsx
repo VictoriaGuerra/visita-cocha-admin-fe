@@ -118,6 +118,15 @@ const Sidebar = () => {
       </nav>
 
       <div className="sidebar-footer">
+        <div className="user-info-card">
+          <div className="user-avatar">
+            <i className="fas fa-user-circle"></i>
+          </div>
+          <div className="user-details">
+            <div className="user-email">{user?.email || 'Usuario'}</div>
+            <div className="user-role">{user?.rol || user?.role || 'SuperAdmin'}</div>
+          </div>
+        </div>
         <button className="logout-button" onClick={logout}>
           <i className="fas fa-sign-out-alt"></i>
           <span>Cerrar Sesión</span>

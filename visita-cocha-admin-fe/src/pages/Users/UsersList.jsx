@@ -1,15 +1,14 @@
 // src/pages/Users/UsersList.jsx
 import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import BaseList from '../../components/UI/BaseList'
 import * as api from '../../api'
-import UserForm from './UserForm'
 
 
 export default function UsersList(){
+	const navigate = useNavigate()
 	const [users, setUsers] = useState([])
 	const [loading, setLoading] = useState(true)
-	const [editing, setEditing] = useState(null)
-	const [showForm, setShowForm] = useState(false)
 
 	const load = async ()=>{
 		setLoading(true)
@@ -25,12 +24,14 @@ export default function UsersList(){
 
 	useEffect(()=>{ load() }, [])
 
-	const handleCreate = ()=>{ setEditing(null); setShowForm(true) }
+	const handleCreate = ()=>{ navigate('/users/new') }
 	
 	const handleEdit = (id)=>{ 
-		const user = users.find(u => u.id === id)
-		setEditing(user)
-		setShowForm(true) 
+		navigate(`/users/edit/${id}`)
+	}
+	
+	const handleView = (id)=>{ 
+		navigate(`/users/view/${id}`)
 	}
 
 	const handleDelete = async (id)=>{
@@ -90,14 +91,16 @@ export default function UsersList(){
 				title="Usuarios"
 				items={users}
 				columns={getColumns()}
+				idField="id"
+				onView={handleView}
 				onEdit={handleEdit}
 				onDelete={handleDelete}
+				onAdd={handleCreate}
+				canView={true}
 				canEdit={true}
 				canDelete={true}
 				canAdd={true}
 			/>
-
-			{showForm && <UserForm onClose={async()=>{ setShowForm(false); await load() }} editing={editing} />}
 		</div>
 	)
 }

@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import * as api from '../../api';
+import { hotelCategoriesApi } from '../../api/hotelCategoriesApi';
 import '../../styles/common.css';
 import '../../styles/forms.css';
 
 const HotelForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const isEdit = Boolean(id);
+  const location = useLocation();
+  const isView = location.pathname.includes('/view/');
+  const isEdit = Boolean(id) && !isView;
 
   const [formData, setFormData] = useState({
     nombre: '',
@@ -34,10 +37,21 @@ const HotelForm = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [temp, setTemp] = useState({ categoria: '', amenidad: '', tipo_habitacion: '' });
+  const [categoriaOptions, setCategoriaOptions] = useState([]);
 
-  const categoriaOptions = ['hotel', 'familiar', 'boutique', 'resort', 'hostal'];
+  useEffect(() => { 
+    loadCategories();
+    if (isEdit || isView) loadHotel(); 
+  }, [id, isEdit, isView]);
 
-  useEffect(() => { if (isEdit) loadHotel(); }, [id]);
+  const loadCategories = async () => {
+    try {
+      const cats = await hotelCategoriesApi.getAvailable();
+      setCategoriaOptions(cats || []);
+    } catch (err) {
+      console.error('Error cargando categorías:', err);
+    }
+  };
 
   const loadHotel = async () => {
     try {
@@ -191,13 +205,14 @@ const HotelForm = () => {
           >
             ← Volver a la lista
           </button>
-          <h2>{isEdit ? 'Editar Hotel' : 'Nuevo Hotel'}</h2>
+          <h2>{isView ? 'Ver Hotel' : isEdit ? 'Editar Hotel' : 'Nuevo Hotel'}</h2>
         </div>
       </div>
 
       {error && <div className="alert alert-danger">{error}</div>}
 
       <form onSubmit={handleSubmit} className="hotel-form">
+        <fieldset disabled={isView} style={{ border: 'none', padding: 0, margin: 0 }}>
         {/* Información básica */}
         <div className="form-section">
           <h3>Información Básica</h3>
@@ -299,17 +314,46 @@ const HotelForm = () => {
         {/* Categorías */}
         <div className="form-section">
           <h3>Categorías</h3>
-          <div className="checkbox-group" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '0.5rem' }}>
-            {categoriaOptions.map(c => (
-              <label key={c} className="checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div className="checkbox-group" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.75rem' }}>
+            {categoriaOptions.map(cat => (
+              <label key={cat._id} className="checkbox-label" style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '0.5rem',
+                padding: '8px 12px',
+                background: formData.categorias.includes(cat._id) ? '#d1fae5' : '#f9fafb',
+                borderRadius: '6px',
+                border: '1px solid',
+                borderColor: formData.categorias.includes(cat._id) ? '#10b981' : '#e5e7eb',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}>
                 <input 
                   type="checkbox" 
-                  checked={formData.categorias.includes(c)} 
-                  onChange={() => toggleCategoria(c)} 
-                /> {c}
+                  checked={formData.categorias.includes(cat._id)} 
+                  onChange={() => toggleCategoria(cat._id)} 
+                /> 
+                <span style={{ fontSize: '20px' }}>
+                  {cat.icon ? (
+                    cat.icon.startsWith('bi-') ? 
+                      <i className={`bi ${cat.icon}`}></i> :
+                    cat.icon.startsWith('fa-') ? 
+                      <i className={`fas ${cat.icon}`}></i> :
+                    cat.icon
+                  ) : '🏨'}
+                </span>
+                <span style={{ fontWeight: formData.categorias.includes(cat._id) ? 600 : 400 }}>
+                  {cat.name}
+                </span>
+                {cat.isFeatured && <span style={{ fontSize: '12px' }}>⭐</span>}
               </label>
             ))}
           </div>
+          {categoriaOptions.length === 0 && (
+            <p style={{ color: '#6b7280', fontStyle: 'italic' }}>
+              No hay categorías disponibles. Ve a Configuración → Categorías de Hoteles para crearlas.
+            </p>
+          )}
         </div>
 
         {/* Amenidades */}
@@ -554,8 +598,9 @@ const HotelForm = () => {
             onClick={handleCancel} 
             className="btn btn-secondary"
           >
-            Cancelar
+            {isView ? 'Volver' : 'Cancelar'}
           </button>
+          {!isView && (
           <button 
             type="submit" 
             disabled={loading} 
@@ -563,7 +608,9 @@ const HotelForm = () => {
           >
             {loading ? 'Guardando...' : (isEdit ? 'Actualizar' : 'Crear')}
           </button>
+          )}
         </div>
+        </fieldset>
       </form>
     </div>
   );

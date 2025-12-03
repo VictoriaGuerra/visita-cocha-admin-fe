@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import * as api from '../../api';
 import '../../styles/common.css';
 import '../../styles/forms.css';
@@ -7,7 +7,9 @@ import '../../styles/forms.css';
 const AnnouncementForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const isEdit = Boolean(id);
+  const location = useLocation();
+  const isView = location.pathname.includes('/view/');
+  const isEdit = Boolean(id) && id !== 'nuevo' && !isView;
 
   const [formData, setFormData] = useState({
     title: '',
@@ -35,9 +37,13 @@ const AnnouncementForm = () => {
   const colorOptions = ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'teal'];
   const typeOptions = ['Feria', 'Festival', 'Concierto', 'Exposición', 'Conferencia', 'Taller', 'Evento Deportivo', 'Otro'];
 
-  useEffect(() => { 
-    if (isEdit) loadAnnouncement(); 
-  }, [id]);
+  useEffect(() => {
+    console.log('🔍 AnnouncementForm - id:', id, 'isEdit:', isEdit, 'isView:', isView);
+    if (isEdit || isView) {
+      console.log('📋 Cargando anuncio...');
+      loadAnnouncement();
+    }
+  }, [id, isEdit, isView]);
 
   const loadAnnouncement = async () => {
     try {
@@ -174,7 +180,7 @@ const AnnouncementForm = () => {
           >
             ← Volver a la lista
           </button>
-          <h2>{isEdit ? 'Editar Anuncio' : 'Nuevo Anuncio'}</h2>
+          <h2>{isView ? 'Ver Anuncio' : isEdit ? 'Editar Anuncio' : 'Nuevo Anuncio'}</h2>
         </div>
       </div>
 
@@ -195,6 +201,7 @@ const AnnouncementForm = () => {
               onChange={handleChange} 
               required 
               className="form-control" 
+              disabled={isView}
             />
           </div>
           
@@ -207,6 +214,7 @@ const AnnouncementForm = () => {
               onChange={handleChange} 
               rows={4} 
               className="form-control" 
+              disabled={isView}
             />
           </div>
 
@@ -220,6 +228,7 @@ const AnnouncementForm = () => {
                 onChange={handleChange}
                 required
                 className="form-control"
+                disabled={isView}
               >
                 <option value="">Seleccionar tipo</option>
                 {typeOptions.map(t => (
@@ -236,6 +245,7 @@ const AnnouncementForm = () => {
                 value={formData.color}
                 onChange={handleChange}
                 className="form-control"
+                disabled={isView}
               >
                 {colorOptions.map(c => (
                   <option key={c} value={c}>{c}</option>
@@ -253,6 +263,7 @@ const AnnouncementForm = () => {
               value={formData.date} 
               onChange={handleChange} 
               className="form-control" 
+              disabled={isView}
             />
           </div>
           
@@ -266,6 +277,7 @@ const AnnouncementForm = () => {
               onChange={handleChange} 
               className="form-control" 
               placeholder="https://..." 
+              disabled={isView}
             />
             {formData.coverUrl && (
               <div className="image-preview">
@@ -288,6 +300,7 @@ const AnnouncementForm = () => {
               onChange={handleChange} 
               className="form-control" 
               placeholder="https://..." 
+              disabled={isView}
             />
           </div>
         </div>
@@ -306,6 +319,7 @@ const AnnouncementForm = () => {
               onChange={handleChange} 
               className="form-control" 
               placeholder="Ej: Av. Kilman"
+              disabled={isView}
             />
           </div>
 
@@ -319,6 +333,7 @@ const AnnouncementForm = () => {
               onChange={handleChange} 
               className="form-control" 
               placeholder="Ej: Parque Killman"
+              disabled={isView}
             />
           </div>
 
@@ -333,6 +348,7 @@ const AnnouncementForm = () => {
                 onChange={handleChange} 
                 className="form-control" 
                 placeholder="-17.3935"
+                disabled={isView}
               />
             </div>
 
@@ -346,6 +362,7 @@ const AnnouncementForm = () => {
                 onChange={handleChange} 
                 className="form-control" 
                 placeholder="-66.1570"
+                disabled={isView}
               />
             </div>
           </div>
@@ -365,6 +382,7 @@ const AnnouncementForm = () => {
               onChange={handleChange} 
               className="form-control" 
               min="0"
+              disabled={isView}
             />
           </div>
 
@@ -375,6 +393,7 @@ const AnnouncementForm = () => {
                 name="available" 
                 checked={formData.available} 
                 onChange={handleChange} 
+                disabled={isView}
               /> Disponible
             </label>
           </div>
@@ -387,15 +406,17 @@ const AnnouncementForm = () => {
             className="btn btn-secondary"
             disabled={loading}
           >
-            Cancelar
+            {isView ? 'Volver' : 'Cancelar'}
           </button>
-          <button 
-            type="submit" 
-            className="btn btn-primary"
-            disabled={loading}
-          >
-            {loading ? 'Guardando...' : (isEdit ? 'Actualizar' : 'Crear')}
-          </button>
+          {!isView && (
+            <button 
+              type="submit" 
+              className="btn btn-primary"
+              disabled={loading}
+            >
+              {loading ? 'Guardando...' : (isEdit ? 'Actualizar' : 'Crear')}
+            </button>
+          )}
         </div>
       </form>
     </div>

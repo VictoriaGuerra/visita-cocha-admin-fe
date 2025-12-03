@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import * as api from '../../api';
 import '../../styles/common.css';
 import '../../styles/forms.css';
@@ -8,7 +8,9 @@ import '../../styles/categories.css';
 const RestaurantForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const isEdit = Boolean(id);
+  const location = useLocation();
+  const isView = location.pathname.includes('/view/');
+  const isEdit = Boolean(id) && !isView;
 
   const [formData, setFormData] = useState({
     name: '',
@@ -44,10 +46,10 @@ const RestaurantForm = () => {
   ]);
 
   useEffect(() => {
-    if (isEdit && id) {
+    if ((isEdit || isView) && id) {
       loadRestaurant();
     }
-  }, [id, isEdit]);
+  }, [id, isEdit, isView]);
 
   const loadRestaurant = async () => {
     try {
@@ -220,12 +222,13 @@ const RestaurantForm = () => {
         >
           ← Volver
         </button>
-        <h2>{isEdit ? 'Editar Restaurante' : 'Nuevo Restaurante'}</h2>
+        <h2>{isView ? 'Ver Restaurante' : isEdit ? 'Editar Restaurante' : 'Nuevo Restaurante'}</h2>
       </div>
 
       {error && <div className="alert alert-danger">{error}</div>}
 
       <form onSubmit={handleSubmit}>
+        <fieldset disabled={isView} style={{ border: 'none', padding: 0, margin: 0 }}>
         <div className="form-section">
           <h3>Información Básica</h3>
           
@@ -453,8 +456,9 @@ const RestaurantForm = () => {
             onClick={() => navigate('/modules/restaurants')} 
             className="btn btn-secondary"
           >
-            Cancelar
+            {isView ? 'Volver' : 'Cancelar'}
           </button>
+          {!isView && (
           <button 
             type="submit" 
             className="btn btn-primary"
@@ -462,7 +466,9 @@ const RestaurantForm = () => {
           >
             {loading ? 'Guardando...' : 'Guardar'}
           </button>
+          )}
         </div>
+        </fieldset>
       </form>
     </div>
   );

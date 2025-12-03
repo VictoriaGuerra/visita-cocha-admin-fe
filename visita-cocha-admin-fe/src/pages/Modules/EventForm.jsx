@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import * as api from '../../api';
 import '../../styles/common.css';
 import '../../styles/forms.css';
@@ -7,7 +7,9 @@ import '../../styles/forms.css';
 const EventForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const isEdit = Boolean(id);
+  const location = useLocation();
+  const isView = location.pathname.includes('/view/');
+  const isEdit = Boolean(id) && !isView;
 
   const [formData, setFormData] = useState({
     name: '',
@@ -35,7 +37,7 @@ const EventForm = () => {
 
   const categoryOptions = ['cultura', 'musica', 'deportes', 'familia', 'gastronomia', 'festival', 'arte', 'teatro'];
 
-  useEffect(() => { if (isEdit) loadEvent(); }, [id]);
+  useEffect(() => { if (isEdit || isView) loadEvent(); }, [id, isEdit, isView]);
 
   const loadEvent = async () => {
     try {
@@ -178,13 +180,14 @@ const EventForm = () => {
           >
             ← Volver a la lista
           </button>
-          <h2>{isEdit ? 'Editar Evento' : 'Nuevo Evento'}</h2>
+          <h2>{isView ? 'Ver Evento' : isEdit ? 'Editar Evento' : 'Nuevo Evento'}</h2>
         </div>
       </div>
 
       {error && <div className="alert alert-danger">{error}</div>}
 
       <form onSubmit={handleSubmit} className="event-form">
+        <fieldset disabled={isView} style={{ border: 'none', padding: 0, margin: 0 }}>
         {/* Información básica */}
         <div className="form-section">
           <h3>Información Básica</h3>
@@ -484,8 +487,9 @@ const EventForm = () => {
             onClick={handleCancel} 
             className="btn btn-secondary"
           >
-            Cancelar
+            {isView ? 'Volver' : 'Cancelar'}
           </button>
+          {!isView && (
           <button 
             type="submit" 
             disabled={loading} 
@@ -493,7 +497,9 @@ const EventForm = () => {
           >
             {loading ? 'Guardando...' : (isEdit ? 'Actualizar' : 'Crear')}
           </button>
+          )}
         </div>
+        </fieldset>
       </form>
     </div>
   );

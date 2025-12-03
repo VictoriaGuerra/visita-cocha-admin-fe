@@ -42,19 +42,15 @@ export default function Dashboard() {
   const [modules, setModules] = useState([]);
 
   useEffect(() => {
-    let mounted = true
-    
-    const load = async () => {
-      try {
-        if (canViewModules) {
-          const list = await api.getModules()
-          if (mounted) setModules(list)
-        }
-      } catch(e) { console.error(e) }
+    // Usar configuración local de módulos en lugar de endpoint inexistente
+    if (canViewModules) {
+      const list = Object.values(MODULE_TYPES || {}).map(m => ({
+        id: m.id,
+        name: m.name,
+        icon: m.icon
+      }))
+      setModules(list)
     }
-    
-    load()
-    return () => mounted = false
   }, [canViewModules])
 
   useEffect(() => {
@@ -83,12 +79,6 @@ export default function Dashboard() {
         try {
           users = await api.getUsers();
         } catch (e) { users = []; }
-
-        // Módulos (definidos en la base de datos, no solo los visibles)
-        let mods = [];
-        try {
-          mods = await api.getModules();
-        } catch (e) { mods = []; }
 
         // Para cada módulo visible, obtener el conteo real
         const moduleCounts = await Promise.all(

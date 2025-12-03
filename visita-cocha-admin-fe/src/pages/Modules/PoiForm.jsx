@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import * as api from '../../api';
 import '../../styles/common.css';
 import '../../styles/forms.css';
@@ -7,7 +7,9 @@ import '../../styles/forms.css';
 const PoiForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const isEdit = Boolean(id);
+  const location = useLocation();
+  const isView = location.pathname.includes('/view/');
+  const isEdit = Boolean(id) && !isView;
 
   const [formData, setFormData] = useState({
     nombre: '',
@@ -43,8 +45,8 @@ const PoiForm = () => {
   const categoriaOptions = ['monumento', 'vista-panoramica', 'religioso', 'museo', 'parque', 'plaza', 'mercado', 'otro'];
 
   useEffect(() => { 
-    if (isEdit) loadPoi(); 
-  }, [id]);
+    if (isEdit || isView) loadPoi(); 
+  }, [id, isEdit, isView]);
 
   const loadPoi = async () => {
     try {
@@ -207,13 +209,14 @@ const PoiForm = () => {
           >
             ← Volver a la lista
           </button>
-          <h2>{isEdit ? 'Editar Punto de Interés' : 'Nuevo Punto de Interés'}</h2>
+          <h2>{isView ? 'Ver Punto de Interés' : isEdit ? 'Editar Punto de Interés' : 'Nuevo Punto de Interés'}</h2>
         </div>
       </div>
 
       {error && <div className="alert alert-danger">{error}</div>}
 
       <form onSubmit={handleSubmit} className="poi-form">
+        <fieldset disabled={isView} style={{ border: 'none', padding: 0, margin: 0 }}>
         {/* Información básica */}
         <div className="form-section">
           <h3>Información Básica</h3>
@@ -580,8 +583,9 @@ const PoiForm = () => {
             className="btn btn-secondary"
             disabled={loading}
           >
-            Cancelar
+            {isView ? 'Volver' : 'Cancelar'}
           </button>
+          {!isView && (
           <button 
             type="submit" 
             className="btn btn-primary"
@@ -589,7 +593,9 @@ const PoiForm = () => {
           >
             {loading ? 'Guardando...' : (isEdit ? 'Actualizar' : 'Crear')}
           </button>
+          )}
         </div>
+        </fieldset>
       </form>
     </div>
   );

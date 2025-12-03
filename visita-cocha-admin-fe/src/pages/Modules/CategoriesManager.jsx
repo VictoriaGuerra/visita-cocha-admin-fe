@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState, useContext } from 'react';
 import { AuthContext } from '../../auth/AuthContext';
 import { isSuperAdmin, isAdmin } from '../../utils/roleUtils';
 import { categoriesApi } from '../../api/categoriesApi';
+import { hotelCategoriesApi } from '../../api/hotelCategoriesApi';
+import IconPicker from '../../components/UI/IconPicker';
 import '../../styles/categories.css';
 import { initializeAttractionCategories, initializeRestaurantCategories, initializeMainCategoriesSeed } from '../../data/sampleData';
 import '../../styles/common.css';
@@ -9,12 +11,14 @@ import '../../styles/common.css';
 const TYPES = [
   { key: 'attractions', label: 'Categorías de Atracciones' },
   { key: 'restaurants', label: 'Categorías de Restaurantes' },
+  { key: 'hotels', label: 'Categorías de Hoteles' },
   { key: 'pois', label: 'Categorías de Puntos de Interés (POI)' }
 ];
 
 const ensureSeed = (type) => {
   if (type === 'attractions') return initializeAttractionCategories();
   if (type === 'restaurants') return initializeRestaurantCategories();
+  if (type === 'hotels') return [];
   if (type === 'pois') return [
     { id: 'universidades', name: 'Universidades', order: 1, available: true, icon: 'bi-mortarboard-fill', description: 'Instituciones de educación superior' },
     { id: 'consulados', name: 'Consulados', order: 2, available: true, icon: 'bi-flag-fill', description: 'Representaciones consulares' },
@@ -29,7 +33,8 @@ const ensureSeed = (type) => {
 const emptyItem = (type) => ({
   id: '', name: '', order: 0, available: true,
   ...(type === 'pois' ? { icon: '', description: '' } : {}),
-  ...(type === 'main' ? { icon: '', photoUrl: '', isFeatured: false } : {})
+  ...(type === 'main' ? { icon: '', photoUrl: '', isFeatured: false } : {}),
+  ...(type === 'hotels' ? { icon: '', description: '', isFeatured: false } : {})
 });
 
 export default function CategoriesManager(){
@@ -43,13 +48,19 @@ export default function CategoriesManager(){
   const [editingId, setEditingId] = useState(null);
   const isMain = useMemo(()=> type === 'main', [type]);
   const isPoi = useMemo(()=> type === 'pois', [type]);
+  const isHotel = useMemo(()=> type === 'hotels', [type]);
 
   const load = async (t) => {
     setLoading(true);
     try {
-      let data = await categoriesApi.getAll(t);
-      if (!data || data.length === 0) {
-        data = ensureSeed(t);
+      let data;
+      if (t === 'hotels') {
+        data = await hotelCategoriesApi.getAll();
+      } else {
+        data = await categoriesApi.getAll(t);
+        if (!data || data.length === 0) {
+          data = ensureSeed(t);
+        }
       }
       setItems(data || []);
     } catch (e) {
@@ -65,7 +76,9 @@ export default function CategoriesManager(){
   }, [type]);
 
   const startEdit = (item) => {
-    setEditingId(item.id);
+    // Para hoteles usar _id, para otros usar id
+    const itemId = type === 'hotels' ? item._id : item.id;
+    setEditingId(itemId);
     setForm({ ...item });
   };
   const cancelEdit = () => { setEditingId(null); setForm(emptyItem(type)); };
@@ -77,29 +90,78 @@ export default function CategoriesManager(){
 
   const save = async () => {
     if (!form.name.trim()) { setError('Nombre requerido'); return; }
-    if (!form.id.trim()) {
-      // si no puso id, generamos desde nombre (slug sencillo)
-      form.id = form.name.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9\-]/g,'');
-    }
+    
     try{
-      if (editingId) await categoriesApi.update(type, editingId, form);
-      else await categoriesApi.create(type, form);
+      if (type === 'hotels') {
+        // Para hoteles, usar hotelCategoriesApi (no necesita id manual, MongoDB genera _id)
+        const { id, ...dataWithoutId } = form;
+        if (editingId) {
+          await hotelCategoriesApi.update(editingId, dataWithoutId);
+        } else {
+          await hotelCategoriesApi.create(dataWithoutId);
+        }
+      } else {
+        // Para otros tipos, mantener lógica original
+        if (!form.id.trim()) {
+          form.id = form.name.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9\-]/g,'');
+        }
+        if (editingId) await categoriesApi.update(type, editingId, form);
+        else await categoriesApi.create(type, form);
+      }
       await load(type);
       cancelEdit();
-    }catch(e){ setError('No se pudo guardar'); }
+    }catch(e){ 
+      console.error(e);
+      setError(e.response?.data?.message || 'No se pudo guardar'); 
+    }
   };
 
   const remove = async (id) => {
     if (!canDelete) { setError('No tienes permisos para eliminar'); return; }
     if (!window.confirm('¿Eliminar categoría?')) return;
-    try { await categoriesApi.delete(type, id); await load(type); }
-    catch(e){ setError('No se pudo eliminar'); }
+    try { 
+      if (type === 'hotels') {
+        await hotelCategoriesApi.delete(id);
+      } else {
+        await categoriesApi.delete(type, id);
+      }
+      await load(type); 
+    }
+    catch(e){ 
+      console.error(e);
+      setError(e.response?.data?.message || 'No se pudo eliminar'); 
+    }
   };
 
   return (
     <div className="module-container">
       <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
         <h2 style={{margin: 0, fontSize: '18px', fontWeight: 600}}>Gestor de Categorías</h2>
+        {isHotel && (
+          <button
+            onClick={async () => {
+              try {
+                await hotelCategoriesApi.seed();
+                setError(null);
+                alert('✅ Categorías iniciales de hoteles pobladas exitosamente');
+                await load('hotels');
+              } catch (e) {
+                setError(e.response?.data?.message || 'Error al poblar categorías');
+              }
+            }}
+            style={{
+              padding: '10px 20px',
+              background: '#10b981',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: 600
+            }}
+          >
+            🌱 Poblar Categorías Iniciales
+          </button>
+        )}
       </div>
 
       {/* Tabs */}
@@ -129,18 +191,20 @@ export default function CategoriesManager(){
       {/* Formulario */}
       <div style={{background:'#fff', borderRadius:'12px', padding:'20px', boxShadow:'0 1px 3px rgba(0,0,0,0.1)', marginBottom: 20}}>
         <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, alignItems: 'flex-end'}}>
-          <div className="form-group">
-            <label htmlFor="id" style={{display: 'block', marginBottom: 4, fontSize: 14, fontWeight: 500}}>ID</label>
-            <input 
-              id="id" 
-              name="id" 
-              value={form.id} 
-              onChange={handleChange} 
-              className="form-control" 
-              placeholder="ej: popular"
-              style={{width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 6}}
-            />
-          </div>
+          {!isHotel && (
+            <div className="form-group">
+              <label htmlFor="id" style={{display: 'block', marginBottom: 4, fontSize: 14, fontWeight: 500}}>ID</label>
+              <input 
+                id="id" 
+                name="id" 
+                value={form.id} 
+                onChange={handleChange} 
+                className="form-control" 
+                placeholder="ej: popular"
+                style={{width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 6}}
+              />
+            </div>
+          )}
           <div className="form-group">
             <label htmlFor="name" style={{display: 'block', marginBottom: 4, fontSize: 14, fontWeight: 500}}>Nombre</label>
             <input 
@@ -195,6 +259,36 @@ export default function CategoriesManager(){
                   placeholder="Breve descripción"
                   style={{width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 6}}
                 />
+              </div>
+            </>
+          )}
+          {isHotel && (
+            <>
+              <div className="form-group">
+                <label htmlFor="icon" style={{display: 'block', marginBottom: 4, fontSize: 14, fontWeight: 500}}>Icono (FontAwesome)</label>
+                <IconPicker
+                  value={form.icon || ''}
+                  onChange={handleChange}
+                  type="hotel"
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="description" style={{display: 'block', marginBottom: 4, fontSize: 14, fontWeight: 500}}>Descripción</label>
+                <input 
+                  id="description" 
+                  name="description" 
+                  value={form.description || ''} 
+                  onChange={handleChange} 
+                  className="form-control" 
+                  placeholder="Hoteles de lujo con servicios premium"
+                  style={{width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 6}}
+                />
+              </div>
+              <div className="form-group">
+                <label style={{display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer'}}>
+                  <input type="checkbox" name="isFeatured" checked={!!form.isFeatured} onChange={handleChange} />
+                  <span style={{fontSize: 14, fontWeight: 500}}>Destacado</span>
+                </label>
               </div>
             </>
           )}
@@ -277,22 +371,42 @@ export default function CategoriesManager(){
             <table style={{width:'100%', borderCollapse:'collapse'}}>
               <thead style={{background:'#e0f2f1'}}>
                 <tr>
-                  <th style={{padding:'12px', textAlign:'left', fontWeight:600}}>ID</th>
+                  {!isHotel && <th style={{padding:'12px', textAlign:'left', fontWeight:600}}>ID</th>}
                   <th style={{padding:'12px', textAlign:'left', fontWeight:600}}>Nombre</th>
-                  {isMain && <th style={{padding:'12px', textAlign:'left', fontWeight:600}}>Icono</th>}
+                  {(isHotel || isPoi) && <th style={{padding:'12px', textAlign:'left', fontWeight:600}}>Descripción</th>}
+                  {(isMain || isHotel || isPoi) && <th style={{padding:'12px', textAlign:'left', fontWeight:600}}>Icono</th>}
                   {isMain && <th style={{padding:'12px', textAlign:'left', fontWeight:600}}>Foto</th>}
+                  {(isMain || isHotel) && <th style={{padding:'12px', textAlign:'center', fontWeight:600}}>Destacado</th>}
                   <th style={{padding:'12px', textAlign:'center', fontWeight:600}}>Orden</th>
                   <th style={{padding:'12px', textAlign:'center', fontWeight:600}}>Disponible</th>
                   <th style={{padding:'12px', textAlign:'center', fontWeight:600}}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {items.map(it => (
-                  <tr key={it.id} style={{borderBottom:'1px solid #e5e7eb'}}>
-                    <td style={{padding:'12px'}}>{it.id}</td>
+                {items.map(it => {
+                  const itemKey = isHotel ? it._id : it.id;
+                  return (
+                  <tr key={itemKey} style={{borderBottom:'1px solid #e5e7eb'}}>
+                    {!isHotel && <td style={{padding:'12px'}}>{it.id}</td>}
                     <td style={{padding:'12px'}}><strong>{it.name}</strong></td>
-                    {isMain && <td style={{padding:'12px'}}>{it.icon || '-'}</td>}
+                    {(isHotel || isPoi) && <td style={{padding:'12px'}}>{it.description || '-'}</td>}
+                    {(isMain || isHotel || isPoi) && (
+                      <td style={{padding:'12px', fontSize: '20px'}}>
+                        {it.icon ? (
+                          it.icon.startsWith('bi-') ? 
+                            <i className={`bi ${it.icon}`}></i> :
+                          it.icon.startsWith('fa-') ? 
+                            <i className={`fas ${it.icon}`}></i> :
+                          it.icon
+                        ) : '-'}
+                      </td>
+                    )}
                     {isMain && <td style={{padding:'12px'}}>{it.photoUrl ? <a href={it.photoUrl} target="_blank" rel="noreferrer" style={{color: '#3f908e', textDecoration: 'underline'}}>ver</a> : '-'}</td>}
+                    {(isMain || isHotel) && (
+                      <td style={{padding:'12px', textAlign:'center'}}>
+                        {it.isFeatured ? '⭐ Sí' : '-'}
+                      </td>
+                    )}
                     <td style={{padding:'12px', textAlign:'center'}}>{it.order ?? 0}</td>
                     <td style={{padding:'12px', textAlign:'center'}}>
                       {it.available ? (
@@ -312,15 +426,16 @@ export default function CategoriesManager(){
                         {canDelete && (
                           <i 
                             className="fas fa-trash" 
-                            onClick={() => remove(it.id)}
-                            title="Eliminar"
-                            style={{cursor:'pointer', fontSize:'18px'}}
-                          ></i>
+                          onClick={() => remove(itemKey)}
+                          title="Eliminar"
+                          style={{cursor:'pointer', fontSize:'18px'}}
+                        ></i>
                         )}
                       </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
