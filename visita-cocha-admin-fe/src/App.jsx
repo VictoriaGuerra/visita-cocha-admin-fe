@@ -8,6 +8,8 @@ import UsersList from './pages/Users/UsersList';
 import UserForm from './pages/Users/UserForm';
 import ModulesList from './pages/Modules/ModulesList';
 import ConfigPage from './pages/Config/ConfigPage';
+import AnalyticsPage from './pages/Analytics/AnalyticsPage';
+import { usePermissions } from './auth/permissions';
 import ModuleGenericList from './pages/Modules/ModuleGenericList';
 import ModuleForm from './components/Modules/ModuleForm';
 import AttractionForm from './pages/Modules/AttractionForm';
@@ -26,7 +28,10 @@ import TransportRoutes from './pages/TransportRoutes';
 
 const AuthenticatedContent = () => {
   const { user } = useContext(AuthContext);
-  const isSuper = user?.roles?.includes('SuperAdmin');
+  const rawRoles = user?.roles || (user?.role ? [user.role] : []);
+  const normRoles = Array.isArray(rawRoles) ? rawRoles.map(r => String(r).toUpperCase()) : [];
+  const isSuper = normRoles.includes('SUPERADMIN') || normRoles.includes('SUPER-ADMIN') || normRoles.includes('SUPER ADMIN');
+  const canViewAnalytics = usePermissions(user?.role || user?.roles || user, 'analytics', 'read');
 
   if (!user) {
     // Allow unauthenticated access to reset page
@@ -44,6 +49,7 @@ const AuthenticatedContent = () => {
       <Routes>
         <Route path="/routes" element={<TransportRoutes />} />
         <Route path="/" element={<Dashboard />} />
+          <Route path="/analytics" element={canViewAnalytics ? <AnalyticsPage /> : <Navigate to="/" replace />} />
   <Route path="/users" element={isSuper ? <UsersList /> : <Navigate to="/" replace />} />
   <Route path="/users/new" element={isSuper ? <UserForm onClose={() => window.history.back()} /> : <Navigate to="/" replace />} />
   <Route path="/users/edit/:id" element={isSuper ? <UserForm onClose={() => window.history.back()} /> : <Navigate to="/" replace />} />

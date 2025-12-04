@@ -1,6 +1,7 @@
 import React, { useContext } from 'react';
 import { NavLink } from 'react-router-dom';
 import { AuthContext } from '../../auth/AuthContext';
+import { usePermissions } from '../../auth/permissions';
 import './Sidebar.css';
 import logo from '../../assets/images/logo.png';
 
@@ -85,6 +86,12 @@ const Sidebar = () => {
       path: '/settings',
       icon: 'fa-cog',
     },
+    {
+      title: 'Analytics',
+      path: '/analytics',
+      icon: 'fa-chart-area',
+      module: 'analytics'
+    }
   ];
 
   return (
@@ -99,9 +106,17 @@ const Sidebar = () => {
 
       <nav className="sidebar-nav">
         {menuItems.map((item) => {
-          const canSee = item.superAdminOnly
-            ? (user?.roles?.includes('SuperAdmin'))
-            : (!item.adminOnly || (user?.roles && (user.roles.includes('SuperAdmin') || user.roles.includes('Admin'))));
+          const canViewAnalytics = usePermissions(user?.role || user?.roles || user, 'analytics', 'read');
+          const rawRoles = user?.roles || (user?.role ? [user.role] : []);
+          const normRoles = Array.isArray(rawRoles) ? rawRoles.map(r => String(r).toUpperCase()) : [];
+          const isSuper = normRoles.includes('SUPERADMIN') || normRoles.includes('SUPER-ADMIN') || normRoles.includes('SUPER ADMIN');
+          const isAdmin = normRoles.includes('ADMIN');
+
+          const canSee = item.module === 'analytics'
+            ? canViewAnalytics
+            : item.superAdminOnly
+            ? isSuper
+            : (!item.adminOnly || (rawRoles && (isSuper || isAdmin)));
           if (!canSee) return null;
           return (
             <NavLink

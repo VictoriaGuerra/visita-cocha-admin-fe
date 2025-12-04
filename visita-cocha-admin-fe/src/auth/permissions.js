@@ -48,23 +48,54 @@ export const PERMISSIONS = {
 // Hook personalizado para verificar permisos
 export const usePermissions = (role, module, action) => {
   if (!role || !module || !action) return false;
-  
+
+  // support role as array or single string; normalize to upper-case keys used in PERMISSIONS
+  const normalize = (r) => {
+    if (!r) return null;
+    if (Array.isArray(r)) {
+      // prefer first defined role
+      return normalize(r[0]);
+    }
+    // map common variants to our keys
+    const s = String(r).trim();
+    const map = {
+      'superadmin': 'SUPERADMIN',
+      'super-admin': 'SUPERADMIN',
+      'super admin': 'SUPERADMIN',
+      'admin': 'ADMIN',
+      'mantenedor': 'MANTENEDOR',
+      'manteneder': 'MANTENEDOR'
+    };
+    const key = map[s.toLowerCase()] || s.toUpperCase();
+    return key;
+  };
+
+  const r = normalize(role);
+  if (!r) return false;
+
   // SuperAdmin siempre tiene acceso total
-  if (role === 'SUPERADMIN') return true;
-  
-  return PERMISSIONS[role]?.[module]?.includes(action) || false;
+  if (r === 'SUPERADMIN') return true;
+
+  return PERMISSIONS[r]?.[module]?.includes(action) || false;
 };
 
 // Función para verificar acceso a elementos específicos
 export const hasElementAccess = (user, moduleId, elementId) => {
   if (!user || !moduleId) return false;
-  
   // SuperAdmin siempre tiene acceso total
-  if (user.role === 'SUPERADMIN') return true;
-  
+  const normalizeRole = (u) => {
+    if (!u) return null;
+    if (Array.isArray(u)) return u[0];
+    if (typeof u === 'object') return u.role || (u.roles && u.roles[0]) || null;
+    return u;
+  };
+  const raw = normalizeRole(user.role || user);
+  const roleKey = raw ? String(raw).toUpperCase() : null;
+  if (roleKey === 'SUPERADMIN' || roleKey === 'SUPER-ADMIN' || roleKey === 'SUPER ADMIN') return true;
+
   // Verificar primero si tiene permiso para el módulo
-  if (!PERMISSIONS[user.role]?.[moduleId]) return false;
-  
+  if (!PERMISSIONS[roleKey]?.[moduleId]) return false;
+
   // Verificar accesos específicos asignados al usuario
   return user.moduleAccess?.[moduleId]?.elements?.includes(elementId) || false;
 };
@@ -72,19 +103,23 @@ export const hasElementAccess = (user, moduleId, elementId) => {
 // Función para verificar si un usuario puede gestionar otros usuarios
 export const canManageUsers = (userRole) => {
   if (!userRole) return false;
-  return PERMISSIONS[userRole]?.users?.includes('create') || false;
+  const r = typeof userRole === 'string' ? userRole.toUpperCase() : (Array.isArray(userRole) ? String(userRole[0]).toUpperCase() : userRole);
+  return PERMISSIONS[r]?.users?.includes('create') || false;
 };
 
 // Función para verificar si un usuario puede asignar módulos
 export const canAssignModules = (userRole) => {
   if (!userRole) return false;
-  return PERMISSIONS[userRole]?.users?.includes('assign-modules') || false;
+  const r = typeof userRole === 'string' ? userRole.toUpperCase() : (Array.isArray(userRole) ? String(userRole[0]).toUpperCase() : userRole);
+  return PERMISSIONS[r]?.users?.includes('assign-modules') || false;
 };
 
 // Función para obtener todos los módulos permitidos para un rol
 export const getPermittedModules = (role) => {
-  if (!role || !PERMISSIONS[role]) return [];
-  return Object.keys(PERMISSIONS[role]).filter(module => module !== 'users' && module !== 'settings');
+  if (!role) return [];
+  const r = typeof role === 'string' ? role.toUpperCase() : (Array.isArray(role) ? String(role[0]).toUpperCase() : role);
+  if (!PERMISSIONS[r]) return [];
+  return Object.keys(PERMISSIONS[r]).filter(module => module !== 'users' && module !== 'settings');
 };
 
 // Función para verificar si un usuario necesita cambiar su contraseña
