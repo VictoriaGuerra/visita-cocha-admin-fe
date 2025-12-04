@@ -17,14 +17,30 @@ export default function QuickUserCreate({ onCreated }){
 
   const handleSubmit = async (e)=>{
     e.preventDefault(); setError(null); setSuccess(''); setSaving(true)
-    try{
-  const res = await api.createUser({ email, roles, firstName, lastName, name: `${firstName} ${lastName}`.trim() })
-  setSuccess(`Usuario creado. Temporales -> Usuario: ${email} | Contraseña: ${res?.tempPassword || '—'}. Deberá cambiarla en su primer ingreso.`)
-  setCreated(true)
-  setEmail(''); setFirstName(''); setLastName(''); setRoles(['Mantenedor'])
-      onCreated && onCreated()
-    }catch(err){ setError(err.message || 'Error al crear usuario') }
-    setSaving(false)
+    try {
+      // Generar un id único para el usuario
+      const id = `u-${Date.now()}`;
+      // Tomar solo el primer rol seleccionado (el backend espera string, no array)
+      const rol = roles[0] || 'Mantenedor';
+      // Construir el payload alineado con el backend
+      const payload = {
+        id,
+        email,
+        nombre: firstName,
+        lastname: lastName,
+        rol,
+        password: 'temporal123', // Puedes cambiar esto por un generador o campo de input
+        debe_cambiar_password: true
+      };
+      const res = await api.createUser(payload);
+      setSuccess(`Usuario creado. Temporales -> Usuario: ${email} | Contraseña: ${payload.password}. Deberá cambiarla en su primer ingreso.`);
+      setCreated(true);
+      setEmail(''); setFirstName(''); setLastName(''); setRoles(['Mantenedor']);
+      onCreated && onCreated();
+    } catch(err) {
+      setError(err.message || 'Error al crear usuario');
+    }
+    setSaving(false);
   }
 
   return (

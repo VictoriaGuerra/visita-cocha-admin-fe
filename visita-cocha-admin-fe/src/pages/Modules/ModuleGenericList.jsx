@@ -4,6 +4,7 @@ import BaseList from '../../components/UI/BaseList';
 import { AuthContext } from '../../auth/AuthContext';
 import { USE_BACKEND, getContentList, deleteContent } from '../../api';
 import { BACKEND_CAPABILITIES } from '../../config/backendEndpoints';
+import { isSuperAdmin, isAdmin, isMantenedor } from '../../utils/roleUtils';
 
 const ModuleGenericList = () => {
   const { moduleType } = useParams();
@@ -12,6 +13,45 @@ const ModuleGenericList = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
+
+  // Función auxiliar para mapear datos del backend
+  const mapBackendData = (data) => {
+    return data.map(item => {
+      const mapped = {
+        ...item,
+        id: item._id || item.id || item.slug // Usar _id como id si existe
+      };
+      
+      // Mapeo específico para eventos (backend en español → frontend en inglés)
+      if (moduleType === 'events') {
+        mapped.name = item.nombre || item.name || '';
+        mapped.startDate = item.fecha || item.startDate || '';
+        mapped.endDate = item.fecha || item.endDate || '';
+        mapped.venueName = item.lugar || item.venueName || '';
+        mapped.active = item.disponible ?? item.active ?? true;
+        mapped.isFeatured = item.destacado ?? item.isFeatured ?? false;
+      }
+      
+      // Mapeo específico para hotels (backend en español → frontend en inglés)
+      if (moduleType === 'hotels') {
+        mapped.name = item.nombre || item.name || '';
+        mapped.stars = item.estrellas ?? item.stars ?? 0;
+        mapped.rating = item.rating ?? 0;
+        mapped.active = item.disponible ?? item.active ?? true;
+      }
+      
+      // Mapeo específico para points/pois (backend en español → frontend en inglés)
+      if (moduleType === 'points' || moduleType === 'pois') {
+        mapped.name = item.nombre || item.name || '';
+        mapped.categories = item.categorias || item.categories || [];
+        mapped.available = item.disponible ?? item.available ?? true;
+        mapped.isFeatured = item.destacado ?? item.isFeatured ?? false;
+        mapped.order = item.orden ?? item.order ?? 0;
+      }
+      
+      return mapped;
+    });
+  };
 
   useEffect(() => {
     const loadData = async () => {
@@ -30,6 +70,21 @@ const ModuleGenericList = () => {
         
         try {
           data = await getContentList(moduleType);
+          console.log('[ModuleGenericList] Datos obtenidos:', moduleType, data);
+          
+          // ⚠️ IMPORTANTE: El backend devuelve _id pero el frontend usa id
+          // Mapear _id a id para que funcione correctamente
+          data = mapBackendData(data);
+          
+          if (data && data.length > 0) {
+            window.lastItem = data[0]; // Para debugging
+            console.log('[ModuleGenericList] Primer item:', data[0]);
+            console.log('[ModuleGenericList] Claves del primer item:', Object.keys(data[0]));
+            console.log('[ModuleGenericList] _id del primer item:', data[0]._id);
+            console.log('[ModuleGenericList] _id tipo:', typeof data[0]._id, 'valor:', JSON.stringify(data[0]._id));
+            console.log('[ModuleGenericList] id mapeado del primer item:', data[0].id);
+            console.log('[ModuleGenericList] Slug:', data[0].slug);
+          }
         } catch (e) {
           console.error('Error obteniendo datos del backend:', e?.message || e);
           setErr(e?.message || 'Error obteniendo datos del backend. Verifica que el backend esté corriendo en localhost:3000');
@@ -39,21 +94,23 @@ const ModuleGenericList = () => {
         // Filtrado por rol y acceso granular
         let visible = data || [];
         if (user) {
-          const isMantenedor = user.roles?.includes('Mantenedor');
-          const isAdmin = user.roles?.includes('Admin');
-          const isSuper = user.roles?.includes('SuperAdmin');
-          // Mantenedor: limitar a elementos autorizados si se especificaron
-          if (isMantenedor) {
+          const isMantenedorRole = isMantenedor(user);
+          const isAdminRole = isAdmin(user);
+          const isSuperAdminRole = isSuperAdmin(user);
+          
+          // Mantenedor: puede ver todos los datos, pero solo editar elementos autorizados
+          // La restricción de edición/eliminación se maneja en los permisos más abajo
+          if (isMantenedorRole) {
             const access = user.moduleAccess?.[moduleType];
             if (access?.elements?.length) {
+              // Si tiene elementos específicos asignados, solo mostrar esos
               visible = visible.filter(it => access.elements.includes(it.id));
-            } else {
-              // Si no hay elementos asignados, no ve ninguno
-              visible = [];
             }
+            // Si no tiene elementos asignados, ve todos (pero sin poder editar/eliminar)
           }
+          
           // Admin: si tiene lista de elementos específicos, también filtrar (por si se asignó granularmente)
-          if (isAdmin && user.moduleAccess?.[moduleType]?.elements?.length) {
+          if (isAdminRole && user.moduleAccess?.[moduleType]?.elements?.length) {
             visible = visible.filter(it => user.moduleAccess[moduleType].elements.includes(it.id));
           }
           // SuperAdmin ve todo
@@ -80,7 +137,10 @@ const ModuleGenericList = () => {
   };
 
   const handleView = (id) => {
-    navigate(`/modules/${moduleType}/${id}`);
+    // Ver = abrir en modo solo lectura
+    const targetUrl = `/modules/${moduleType}/view/${id}`;
+    console.log('[ModuleGenericList] Navegando a vista:', targetUrl, 'desde moduleType:', moduleType);
+    navigate(targetUrl);
   };
 
   const handleDelete = async (id) => {
@@ -93,17 +153,22 @@ const ModuleGenericList = () => {
           await localStoreApi.delete(moduleType, id);
         }
         const updatedData = await getContentList(moduleType);
+        
+        // Aplicar el mismo mapeo que en useEffect
+        let visible = mapBackendData(updatedData || []);
+        
         // mantener el mismo filtrado post-eliminación
-        let visible = updatedData || [];
         if (user) {
-          const isMantenedor = user.roles?.includes('Mantenedor');
-          const isAdmin = user.roles?.includes('Admin');
-          if (isMantenedor) {
+          const isMantenedorRole = isMantenedor(user);
+          const isAdminRole = isAdmin(user);
+          if (isMantenedorRole) {
             const access = user.moduleAccess?.[moduleType];
-            if (access?.elements?.length) visible = visible.filter(it => access.elements.includes(it.id));
-            else visible = [];
+            if (access?.elements?.length) {
+              visible = visible.filter(it => access.elements.includes(it.id));
+            }
+            // Si no tiene elementos asignados, ve todos
           }
-          if (isAdmin && user.moduleAccess?.[moduleType]?.elements?.length) {
+          if (isAdminRole && user.moduleAccess?.[moduleType]?.elements?.length) {
             visible = visible.filter(it => user.moduleAccess[moduleType].elements.includes(it.id));
           }
         }
@@ -126,7 +191,9 @@ const ModuleGenericList = () => {
     itineraries: 'Itinerarios',
     mainCategories: 'Categorías Principales',
     announcements: 'Anuncios',
-    points: 'Puntos de Interés'
+    points: 'Puntos de Interés',
+    events: 'Eventos',
+    hotels: 'Hoteles'
   }[moduleType] || moduleType;
 
   // Columnas específicas para cada módulo
@@ -183,15 +250,13 @@ const ModuleGenericList = () => {
           { key: 'startDate', label: 'Inicio' },
           { key: 'endDate', label: 'Fin' },
           { key: 'venueName', label: 'Lugar' },
-          { key: 'active', label: 'Activo', render: (value) => value ? '✓' : '✗' },
-          { key: 'isFeatured', label: 'Destacado', render: (value) => value ? '★' : '' }
+          { key: 'active', label: 'Activo', render: (value) => value ? '✓' : '✗' }
         ];
       case 'hotels':
         return [
           { key: 'name', label: 'Nombre' },
           { key: 'stars', label: 'Estrellas' },
           { key: 'rating', label: 'Calificación' },
-          { key: 'isFeatured', label: 'Destacado', render: (value) => value ? '★' : '' },
           { key: 'available', label: 'Disponible', render: (value) => value ? '✓' : '✗' }
         ];
       case 'announcements':
@@ -206,8 +271,25 @@ const ModuleGenericList = () => {
       case 'points':
         return [
           { key: 'name', label: 'Nombre' },
-          { key: 'categories', label: 'Categorías', render: (value) => Array.isArray(value) ? value.join(', ') : '-' },
-          { key: 'isFeatured', label: 'Destacado', render: (value) => value ? '★' : '' },
+          { key: 'categories', label: 'Categorías', render: (value) => {
+            if (!Array.isArray(value) || value.length === 0) return '-';
+            return (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                {value.map((cat, idx) => (
+                  <span key={idx} style={{ 
+                    padding: '2px 8px', 
+                    background: '#e3f2fd', 
+                    borderRadius: '12px', 
+                    fontSize: '0.85em',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    {cat}
+                  </span>
+                ))}
+              </div>
+            );
+          }},
+          { key: 'isFeatured', label: 'Destacado', render: (value) => value ? '✓' : '' },
           { key: 'available', label: 'Disponible', render: (value) => value ? '✓' : '✗' },
           { key: 'order', label: 'Orden' }
         ];
@@ -222,18 +304,18 @@ const ModuleGenericList = () => {
   };
 
   // Permisos acción
-  const isSuper = user?.roles?.includes('SuperAdmin');
-  const isAdmin = user?.roles?.includes('Admin');
-  const isMantenedor = user?.roles?.includes('Mantenedor');
+  const isSuperAdminRole = isSuperAdmin(user);
+  const isAdminRole = isAdmin(user);
+  const isMantenedorRole = isMantenedor(user);
 
   const caps = BACKEND_CAPABILITIES[moduleType] || { create:false, update:false, delete:false }
   const backendReadOnly = USE_BACKEND && !(caps.create || caps.update || caps.delete)
-  const canDelete = USE_BACKEND ? (caps.delete && (isSuper || isAdmin)) : (isSuper || isAdmin)
-  const canAdd = USE_BACKEND ? (caps.create && (isSuper || isAdmin)) : (isSuper || isAdmin)
+  const canDelete = USE_BACKEND ? (caps.delete && (isSuperAdminRole || isAdminRole)) : (isSuperAdminRole || isAdminRole)
+  const canAdd = USE_BACKEND ? (caps.create && (isSuperAdminRole || isAdminRole)) : (isSuperAdminRole || isAdminRole)
   // Para editar: Super/Admin pueden editar cualquier del listado; Mantenedor solo si el elemento está dentro de su lista
   const canEditRow = (id) => {
-    if (isSuper || isAdmin) return true;
-    if (isMantenedor) {
+    if (isSuperAdminRole || isAdminRole) return true;
+    if (isMantenedorRole) {
       const allowed = user?.moduleAccess?.[moduleType]?.elements || [];
       return allowed.includes(id);
     }
@@ -248,9 +330,6 @@ const ModuleGenericList = () => {
 
   return (
     <div className="module-container">
-      <div className="module-header">
-        <h2>{moduleTitle}</h2>
-      </div>
       {USE_BACKEND && err && (
         <div className="error-message" style={{ marginBottom: 12 }}>{err}</div>
       )}
@@ -260,7 +339,7 @@ const ModuleGenericList = () => {
         items={items}
         columns={getColumns()}
         onView={handleView}
-        onEdit={canAdd ? handleSafeEdit : undefined}
+        onEdit={handleSafeEdit}
         onDelete={canDelete ? handleDelete : () => {}}
         canEdit={canAdd}
         canDelete={canDelete}

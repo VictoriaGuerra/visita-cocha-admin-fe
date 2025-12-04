@@ -30,25 +30,96 @@ export const AuthProvider = ({ children }) => {
   // async login using mockApi
   const login = async (email, password) => {
     try{
-      await api.authLogin(email, password)
-      // Preferimos /auth/me si existe; si no, caemos a listado y filtramos por email
-      let newUser = null
-      try {
-        const me = await api.getMe(email)
-        if (me) newUser = me
-      } catch {}
-      if (!newUser){
-        const users = await api.getUsers()
-        const u = users.find(x => x.email === email)
-        newUser = u ? { ...u } : { email, name: email, roles: ['SuperAdmin'] }
+      const loginData = await api.authLogin(email, password)
+      
+      console.log('[AuthContext] 🔍 Respuesta completa del backend:', loginData)
+      
+      // El backend devuelve el usuario en loginData.usuario, usarlo directamente
+      let newUser = loginData?.usuario
+      
+      // Si el backend no devolvió usuario en el login, intentar obtenerlo
+      if (!newUser) {
+        console.log('[AuthContext] Login no devolvió usuario, intentando /user/me')
+        try {
+          const me = await api.getMe()
+          if (me) newUser = me
+        } catch (err) {
+          console.log('[AuthContext] /user/me falló:', err.message)
+        }
       }
+      
+      // Si aún no tenemos usuario, intentar obtener del listado
+      if (!newUser){
+        try {
+          const users = await api.getUsers()
+          const u = users.find(x => x.email === email)
+          newUser = u ? { ...u } : null
+        } catch (err) {
+          console.log('[AuthContext] No se pudo obtener usuario desde /user', err.message)
+        }
+      }
+      
+      // Fallback: crear usuario básico
+      if (!newUser) {
+        newUser = { email, name: email, roles: ['SuperAdmin'] }
+      }
+      
+      // Normalizar roles: convertir 'role' o 'rol' singular en 'roles' array
+      if (newUser && !newUser.roles) {
+        const singleRole = newUser.role || newUser.rol;
+        if (singleRole) {
+          newUser.roles = Array.isArray(singleRole) ? singleRole : [singleRole];
+        } else {
+          newUser.roles = ['SuperAdmin']; // fallback por defecto
+        }
+      }
+      
+      // Mapear debe_cambiar_password a mustChangePassword para el frontend
+      // El backend puede enviar el flag en varios lugares:
+      // 1. loginData.debe_cambiar_password (raíz de respuesta)
+      // 2. loginData.mustChangePassword (raíz de respuesta)
+      // 3. newUser.debe_cambiar_password (dentro del objeto usuario)
+      // 4. newUser.mustChangePassword (dentro del objeto usuario)
+      if (newUser) {
+        console.log('[AuthContext] 🔍 Verificando flags de cambio de contraseña:', {
+          'loginData.debe_cambiar_password': loginData?.debe_cambiar_password,
+          'loginData.mustChangePassword': loginData?.mustChangePassword,
+          'usuario.debe_cambiar_password': newUser.debe_cambiar_password,
+          'usuario.mustChangePassword': newUser.mustChangePassword,
+          'usuario.requiresPasswordChange': newUser.requiresPasswordChange
+        })
+        
+        const backendFlag = 
+          loginData?.debe_cambiar_password ?? 
+          loginData?.mustChangePassword ?? 
+          newUser.debe_cambiar_password ?? 
+          newUser.mustChangePassword ?? 
+          newUser.requiresPasswordChange ?? 
+          false;
+        
+        console.log('[AuthContext] 🎯 Flag final detectado:', backendFlag)
+        
+        newUser.mustChangePassword = Boolean(backendFlag);
+        newUser.debe_cambiar_password = Boolean(backendFlag);
+      }
+      
+      console.log('[AuthContext] ✅ Usuario autenticado:', { 
+        email: newUser.email, 
+        roles: newUser.roles, 
+        mustChangePassword: newUser.mustChangePassword,
+        debe_cambiar_password: newUser.debe_cambiar_password,
+        loginData_flag: loginData?.debe_cambiar_password,
+        loginData_mustChange: loginData?.mustChangePassword
+      });
+      
       setUser(newUser)
       // We no longer persist sessions across reloads to force login every time
       // localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(newUser))
       return true
     }catch(e){
-      console.log('Login fallido', e)
-      return false
+      console.error('Login fallido:', e)
+      // Re-lanzar el error para que el componente Login pueda mostrarlo
+      throw e
     }
   }
 
@@ -78,9 +149,24 @@ export const AuthProvider = ({ children }) => {
   // complete initial password change on first login
   const completeInitialPasswordSetup = async (newPassword) => {
     if (!user?.email) throw new Error('No user email available')
-  const updated = await api.completeInitialPasswordSetup(user.email, newPassword)
-    setUser(prev => ({ ...prev, ...updated }))
-    return updated
+    const responseData = await api.completeInitialPasswordSetup(user.email, newPassword)
+    
+    // El backend devuelve { token, usuario, debe_cambiar_password }
+    // Actualizar el usuario con los nuevos datos y el flag en false
+    const updatedUser = {
+      ...user,
+      ...responseData.usuario,
+      mustChangePassword: false,
+      debe_cambiar_password: false
+    }
+    
+    console.log('[AuthContext] Contraseña inicial cambiada:', { 
+      email: updatedUser.email, 
+      mustChangePassword: updatedUser.mustChangePassword 
+    })
+    
+    setUser(updatedUser)
+    return updatedUser
   }
 
   return (

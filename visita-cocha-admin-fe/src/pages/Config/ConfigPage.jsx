@@ -1,173 +1,456 @@
-import React, { useState, useEffect } from 'react'
-import '../../styles/profile.css'
-import { settingsApi } from '../../api/settingsApi'
+import React, { useState } from 'react'
+import HotelCategories from '../../components/HotelCategories/HotelCategories'
+import '../../styles/common.css'
+import '../../components/Modules/ModuleForm.css'
+import '../../styles/forms.css'
 
 export default function ConfigPage() {
-  const [settings, setSettings] = useState(settingsApi.get())
+  const [activeTab, setActiveTab] = useState('settings') // 'settings' | 'hotelCategories'
   const [saving, setSaving] = useState(false)
   const [success, setSuccess] = useState('')
   const [error, setError] = useState('')
 
-  // Local draft state to allow editing without mutating until save
-  const [draft, setDraft] = useState(settings)
+  const [formData, setFormData] = useState({
+    appName: 'Visita Cocha Admin',
+    appVersion: '2.0.0',
+    appDescription: 'Panel administrativo para gestión de contenido turístico',
+    contactEmail: 'admin@visitacocha.com',
+    supportPhone: '+591 4 4123456',
+    address: 'Cochabamba, Bolivia',
+    timezone: 'America/La_Paz',
+    language: 'es',
+    itemsPerPage: 10,
+    maxFileSize: 10,
+    allowedFileTypes: '.jpg, .png, .pdf, .geojson, .kml',
+    enableNotifications: true,
+    enableEmailAlerts: true,
+    maintenanceMode: false,
+    googleMapsApiKey: '',
+    analyticsEnabled: true,
+  })
 
-  useEffect(() => { setDraft(settings) }, [])
-
-  const updateDraft = (section, field, value) => {
-    setDraft(prev => ({ ...prev, [section]: { ...prev[section], [field]: value } }))
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }))
   }
 
   const handleSave = (e) => {
     e.preventDefault()
     setSaving(true)
-    setError(''); setSuccess('')
-    try {
-      const stored = settingsApi.save(draft)
-      setSettings(stored)
-      setSuccess('Configuraciones guardadas')
-    } catch(err) {
-      console.error(err)
-      setError('Error al guardar configuraciones')
-    }
-    setSaving(false)
+    setError('')
+    setSuccess('')
+    
+    setTimeout(() => {
+      localStorage.setItem('app-settings', JSON.stringify(formData))
+      setSuccess('Configuraciones guardadas exitosamente')
+      setSaving(false)
+    }, 500)
   }
 
   const handleReset = () => {
     if (!window.confirm('¿Restablecer configuraciones a valores por defecto?')) return
-    const res = settingsApi.reset()
-    setSettings(res); setDraft(res)
-    setSuccess('Valores restablecidos')
+    setFormData({
+      appName: 'Visita Cocha Admin',
+      appVersion: '2.0.0',
+      appDescription: 'Panel administrativo para gestión de contenido turístico',
+      contactEmail: 'admin@visitacocha.com',
+      supportPhone: '+591 4 4123456',
+      address: 'Cochabamba, Bolivia',
+      timezone: 'America/La_Paz',
+      language: 'es',
+      itemsPerPage: 10,
+      maxFileSize: 10,
+      allowedFileTypes: '.jpg, .png, .pdf, .geojson, .kml',
+      enableNotifications: true,
+      enableEmailAlerts: true,
+      maintenanceMode: false,
+      googleMapsApiKey: '',
+      analyticsEnabled: true,
+    })
+    setSuccess('Valores restablecidos a configuración por defecto')
   }
 
   return (
-    <div className="settings-page">
-      <div className="profile-header">
-        <i className="fas fa-cog"></i>
-        <h2 className="profile-title">Configuraciones</h2>
+    <div className="module-container">
+      <div className="module-header">
+        <h2>⚙️ Configuración del Sistema</h2>
       </div>
 
-      <form onSubmit={handleSave} className="settings-form">
-        {/* General */}
-        <section className="settings-section">
-          <h3><i className="fas fa-wrench"></i> General</h3>
-          <div className="form-row-two">
-            <div className="form-group">
-              <label>Nombre del sitio</label>
-              <input type="text" value={draft.general.siteName} onChange={e => updateDraft('general','siteName',e.target.value)} className="form-input" />
-            </div>
-            <div className="form-group">
-              <label>Organización</label>
-              <input type="text" value={draft.general.organization} onChange={e => updateDraft('general','organization',e.target.value)} className="form-input" />
-            </div>
-          </div>
-          <div className="form-row-two">
-            <div className="form-group">
-              <label>Correo de contacto</label>
-              <input type="email" value={draft.general.contactEmail} onChange={e => updateDraft('general','contactEmail',e.target.value)} className="form-input" />
-            </div>
-            <div className="form-group">
-              <label>Ítems por página</label>
-              <input type="number" min={1} value={draft.general.itemsPerPage} onChange={e => updateDraft('general','itemsPerPage',Number(e.target.value))} className="form-input" />
-            </div>
-          </div>
-          <label className="form-checkbox">
-            <input type="checkbox" checked={draft.general.maintenanceMode} onChange={e => updateDraft('general','maintenanceMode',e.target.checked)} /> Modo mantenimiento
-          </label>
-        </section>
+      {/* Tabs */}
+      <div style={{
+        display: 'flex',
+        gap: '10px',
+        marginBottom: '20px',
+        borderBottom: '2px solid #e5e7eb',
+        paddingBottom: '10px'
+      }}>
+        <button
+          onClick={() => setActiveTab('settings')}
+          style={{
+            padding: '10px 20px',
+            background: activeTab === 'settings' ? 'linear-gradient(135deg, #3f908e 0%, #2d6a69 100%)' : '#f3f4f6',
+            color: activeTab === 'settings' ? 'white' : '#374151',
+            border: 'none',
+            borderRadius: '8px',
+            fontWeight: '600',
+            cursor: 'pointer',
+            transition: 'all 0.3s'
+          }}
+        >
+          ⚙️ Configuración General
+        </button>
+        <button
+          onClick={() => setActiveTab('hotelCategories')}
+          style={{
+            padding: '10px 20px',
+            background: activeTab === 'hotelCategories' ? 'linear-gradient(135deg, #3f908e 0%, #2d6a69 100%)' : '#f3f4f6',
+            color: activeTab === 'hotelCategories' ? 'white' : '#374151',
+            border: 'none',
+            borderRadius: '8px',
+            fontWeight: '600',
+            cursor: 'pointer',
+            transition: 'all 0.3s'
+          }}
+        >
+          🏨 Categorías de Hoteles
+        </button>
+      </div>
 
-        {/* Apariencia */}
-        <section className="settings-section">
-          <h3><i className="fas fa-palette"></i> Apariencia</h3>
-          <div className="form-row-two">
-            <div className="form-group">
-              <label>Color primario</label>
-              <input type="color" value={draft.appearance.primaryColor} onChange={e => updateDraft('appearance','primaryColor',e.target.value)} />
-            </div>
-            <div className="form-group">
-              <label>Color secundario</label>
-              <input type="color" value={draft.appearance.secondaryColor} onChange={e => updateDraft('appearance','secondaryColor',e.target.value)} />
-            </div>
+      {/* Tab: Configuración General */}
+      {activeTab === 'settings' && (
+        <form onSubmit={handleSave} className="module-form">
+        {error && (
+          <div className="alert alert-danger" style={{
+            background: '#fee2e2',
+            border: '1px solid #fecaca',
+            borderRadius: '8px',
+            padding: '12px 16px',
+            color: '#991b1b',
+            marginBottom: '16px'
+          }}>
+            {error}
           </div>
+        )}
+        
+        {success && (
+          <div className="alert alert-success" style={{
+            background: '#d1fae5',
+            border: '1px solid #a7f3d0',
+            borderRadius: '8px',
+            padding: '12px 16px',
+            color: '#065f46',
+            marginBottom: '16px'
+          }}>
+            {success}
+          </div>
+        )}
+
+        {/* Información General */}
+        <div className="form-section">
+          <h3 className="section-title" style={{
+            background: 'linear-gradient(135deg, #3f908e 0%, #2d6a69 100%)',
+            color: 'white',
+            padding: '12px 16px',
+            borderRadius: '8px',
+            marginBottom: '16px',
+            fontSize: '16px',
+            fontWeight: '600'
+          }}>
+            📋 Información General
+          </h3>
+          
           <div className="form-group">
-            <label>Logo URL</label>
-            <input type="url" value={draft.appearance.logoUrl} onChange={e => updateDraft('appearance','logoUrl',e.target.value)} className="form-input" placeholder="https://..." />
+            <label>Nombre de la Aplicación *</label>
+            <input
+              type="text"
+              name="appName"
+              value={formData.appName}
+              onChange={handleChange}
+              className="form-input"
+              required
+            />
           </div>
-          <label className="form-checkbox">
-            <input type="checkbox" checked={draft.appearance.darkMode} onChange={e => updateDraft('appearance','darkMode',e.target.checked)} /> Modo oscuro
-          </label>
-        </section>
 
-        {/* Localización */}
-        <section className="settings-section">
-          <h3><i className="fas fa-globe"></i> Localización</h3>
-          <div className="form-row-two">
+          <div className="form-row">
+            <div className="form-group">
+              <label>Versión</label>
+              <input
+                type="text"
+                name="appVersion"
+                value={formData.appVersion}
+                onChange={handleChange}
+                className="form-input"
+              />
+            </div>
             <div className="form-group">
               <label>Idioma</label>
-              <select value={draft.localization.language} onChange={e => updateDraft('localization','language',e.target.value)} className="form-input">
+              <select
+                name="language"
+                value={formData.language}
+                onChange={handleChange}
+                className="form-input"
+              >
                 <option value="es">Español</option>
-                <option value="en">Inglés</option>
+                <option value="en">English</option>
+                <option value="qu">Quechua</option>
               </select>
             </div>
+          </div>
+
+          <div className="form-group">
+            <label>Descripción</label>
+            <textarea
+              name="appDescription"
+              value={formData.appDescription}
+              onChange={handleChange}
+              className="form-input"
+              rows={3}
+            />
+          </div>
+        </div>
+
+        {/* Datos de Contacto */}
+        <div className="form-section">
+          <h3 className="section-title" style={{
+            background: 'linear-gradient(135deg, #3f908e 0%, #2d6a69 100%)',
+            color: 'white',
+            padding: '12px 16px',
+            borderRadius: '8px',
+            marginBottom: '16px',
+            fontSize: '16px',
+            fontWeight: '600'
+          }}>
+            📞 Datos de Contacto
+          </h3>
+          
+          <div className="form-row">
             <div className="form-group">
-              <label>Zona horaria</label>
-              <input type="text" value={draft.localization.timezone} onChange={e => updateDraft('localization','timezone',e.target.value)} className="form-input" />
+              <label>Email de Contacto</label>
+              <input
+                type="email"
+                name="contactEmail"
+                value={formData.contactEmail}
+                onChange={handleChange}
+                className="form-input"
+              />
+            </div>
+            <div className="form-group">
+              <label>Teléfono de Soporte</label>
+              <input
+                type="text"
+                name="supportPhone"
+                value={formData.supportPhone}
+                onChange={handleChange}
+                className="form-input"
+              />
             </div>
           </div>
-          <div className="form-row-two">
+
+          <div className="form-group">
+            <label>Dirección</label>
+            <input
+              type="text"
+              name="address"
+              value={formData.address}
+              onChange={handleChange}
+              className="form-input"
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Zona Horaria</label>
+            <input
+              type="text"
+              name="timezone"
+              value={formData.timezone}
+              onChange={handleChange}
+              className="form-input"
+            />
+          </div>
+        </div>
+
+        {/* Configuración del Sistema */}
+        <div className="form-section">
+          <h3 className="section-title" style={{
+            background: 'linear-gradient(135deg, #3f908e 0%, #2d6a69 100%)',
+            color: 'white',
+            padding: '12px 16px',
+            borderRadius: '8px',
+            marginBottom: '16px',
+            fontSize: '16px',
+            fontWeight: '600'
+          }}>
+            ⚙️ Configuración del Sistema
+          </h3>
+          
+          <div className="form-row">
             <div className="form-group">
-              <label>Formato de fecha</label>
-              <input type="text" value={draft.localization.dateFormat} onChange={e => updateDraft('localization','dateFormat',e.target.value)} className="form-input" />
+              <label>Ítems por Página</label>
+              <input
+                type="number"
+                name="itemsPerPage"
+                value={formData.itemsPerPage}
+                onChange={handleChange}
+                className="form-input"
+                min="5"
+                max="100"
+              />
             </div>
             <div className="form-group">
-              <label>Moneda</label>
-              <input type="text" value={draft.localization.currency} onChange={e => updateDraft('localization','currency',e.target.value)} className="form-input" />
+              <label>Tamaño Máximo de Archivo (MB)</label>
+              <input
+                type="number"
+                name="maxFileSize"
+                value={formData.maxFileSize}
+                onChange={handleChange}
+                className="form-input"
+                min="1"
+                max="100"
+              />
             </div>
           </div>
-        </section>
 
-        {/* Notificaciones */}
-        <section className="settings-section">
-          <h3><i className="fas fa-bell"></i> Notificaciones</h3>
-          <label className="form-checkbox"><input type="checkbox" checked={draft.notifications.emailEnabled} onChange={e => updateDraft('notifications','emailEnabled',e.target.checked)} /> Email habilitado</label>
-          <label className="form-checkbox"><input type="checkbox" checked={draft.notifications.pushEnabled} onChange={e => updateDraft('notifications','pushEnabled',e.target.checked)} /> Push habilitado</label>
-          <label className="form-checkbox"><input type="checkbox" checked={draft.notifications.weeklySummary} onChange={e => updateDraft('notifications','weeklySummary',e.target.checked)} /> Resumen semanal</label>
-        </section>
-
-        {/* Seguridad */}
-        <section className="settings-section">
-          <h3><i className="fas fa-shield-alt"></i> Seguridad</h3>
-          <label className="form-checkbox"><input type="checkbox" checked={draft.security.require2FA} onChange={e => updateDraft('security','require2FA',e.target.checked)} /> Requerir 2FA</label>
           <div className="form-group">
-            <label>Timeout de sesión (min)</label>
-            <input type="number" min={5} value={draft.security.sessionTimeoutMinutes} onChange={e => updateDraft('security','sessionTimeoutMinutes',Number(e.target.value))} className="form-input" />
+            <label>Tipos de Archivo Permitidos</label>
+            <input
+              type="text"
+              name="allowedFileTypes"
+              value={formData.allowedFileTypes}
+              onChange={handleChange}
+              className="form-input"
+              placeholder=".jpg, .png, .pdf"
+            />
           </div>
-          <label className="form-checkbox"><input type="checkbox" checked={draft.security.allowPublicRegistration} onChange={e => updateDraft('security','allowPublicRegistration',e.target.checked)} /> Permitir registro público</label>
-        </section>
 
-        {/* Avanzado */}
-        <section className="settings-section">
-          <h3><i className="fas fa-tools"></i> Avanzado</h3>
           <div className="form-group">
-            <label>Analytics ID</label>
-            <input type="text" value={draft.advanced.analyticsId} onChange={e => updateDraft('advanced','analyticsId',e.target.value)} className="form-input" />
+            <label>Google Maps API Key</label>
+            <input
+              type="text"
+              name="googleMapsApiKey"
+              value={formData.googleMapsApiKey}
+              onChange={handleChange}
+              className="form-input"
+              placeholder="AIzaSy..."
+            />
           </div>
+        </div>
+
+        {/* Notificaciones y Alertas */}
+        <div className="form-section">
+          <h3 className="section-title" style={{
+            background: 'linear-gradient(135deg, #3f908e 0%, #2d6a69 100%)',
+            color: 'white',
+            padding: '12px 16px',
+            borderRadius: '8px',
+            marginBottom: '16px',
+            fontSize: '16px',
+            fontWeight: '600'
+          }}>
+            🔔 Notificaciones y Alertas
+          </h3>
+          
           <div className="form-group">
-            <label>Maps API Key</label>
-            <input type="text" value={draft.advanced.mapsApiKey} onChange={e => updateDraft('advanced','mapsApiKey',e.target.value)} className="form-input" />
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                name="enableNotifications"
+                checked={formData.enableNotifications}
+                onChange={handleChange}
+              />
+              <span>Habilitar notificaciones del sistema</span>
+            </label>
           </div>
-          <label className="form-checkbox"><input type="checkbox" checked={draft.advanced.dataExportEnabled} onChange={e => updateDraft('advanced','dataExportEnabled',e.target.checked)} /> Exportar datos habilitado</label>
-        </section>
 
-        {error && <div className="error-message"><i className="fas fa-exclamation-circle"></i> {error}</div>}
-        {success && <div className="success-message"><i className="fas fa-check-circle"></i> {success}</div>}
+          <div className="form-group">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                name="enableEmailAlerts"
+                checked={formData.enableEmailAlerts}
+                onChange={handleChange}
+              />
+              <span>Habilitar alertas por email</span>
+            </label>
+          </div>
 
-        <div className="form-actions" style={{ display: 'flex', gap: '1rem' }}>
-          <button type="button" className="btn btn-danger" onClick={handleReset}><i className="fas fa-undo"></i> Restablecer</button>
-          <button type="submit" disabled={saving} className="btn btn-primary">
-            {saving ? <><i className="fas fa-spinner fa-spin"></i> Guardando...</> : <><i className="fas fa-save"></i> Guardar</>}
+          <div className="form-group">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                name="analyticsEnabled"
+                checked={formData.analyticsEnabled}
+                onChange={handleChange}
+              />
+              <span>Habilitar análisis y estadísticas</span>
+            </label>
+          </div>
+        </div>
+
+        {/* Mantenimiento */}
+        <div className="form-section">
+          <h3 className="section-title" style={{
+            background: 'linear-gradient(135deg, #3f908e 0%, #2d6a69 100%)',
+            color: 'white',
+            padding: '12px 16px',
+            borderRadius: '8px',
+            marginBottom: '16px',
+            fontSize: '16px',
+            fontWeight: '600'
+          }}>
+            🔧 Modo Mantenimiento
+          </h3>
+          
+          <div className="form-group">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                name="maintenanceMode"
+                checked={formData.maintenanceMode}
+                onChange={handleChange}
+              />
+              <span>Activar modo mantenimiento (bloquea acceso a usuarios)</span>
+            </label>
+            {formData.maintenanceMode && (
+              <p style={{ 
+                marginTop: 8, 
+                padding: '8px 12px', 
+                background: '#fef3c7', 
+                borderRadius: 6,
+                fontSize: 14,
+                color: '#92400e'
+              }}>
+                ⚠️ El modo mantenimiento está activo. Los usuarios no podrán acceder al sistema.
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="form-actions">
+          <button 
+            type="button" 
+            onClick={handleReset}
+            className="btn-secondary"
+          >
+            🔄 Restablecer
+          </button>
+          <button 
+            type="submit" 
+            disabled={saving}
+            className="btn-primary"
+          >
+            {saving ? '💾 Guardando...' : '💾 Guardar Configuración'}
           </button>
         </div>
       </form>
+      )}
+
+      {/* Tab: Categorías de Hoteles */}
+      {activeTab === 'hotelCategories' && (
+        <HotelCategories />
+      )}
     </div>
   )
 }

@@ -29,30 +29,32 @@ async function callApiMethod(method, path, payload) {
     } catch (e) {
       lastErr = e
       const status = e?.response?.status
+      // Si es 401/403, lanzar inmediatamente (problema de auth)
       if (status === 401 || status === 403) throw e
+      // Si es 404, seguir probando otras rutas
+      if (status === 404) continue
+      // Para otros errores (500, etc), también lanzar inmediatamente
+      if (status && status !== 404) throw e
     }
   }
-  throw lastErr || new Error('No response from backend')
+  // Si llegamos aquí, ninguna ruta funcionó
+  const msg = lastErr?.response?.status === 404 
+    ? `Endpoint no encontrado. Probados: ${candidates.join(', ')}`
+    : lastErr?.message || 'No response from backend'
+  throw lastErr || new Error(msg)
 }
 
 /* AUTHENTICATION */
 export async function authLogin(email, password) {
   if (!useBackend) throw new Error('Backend requerido')
-  // El endpoint correcto es /auth/login según el backend
-  try {
-    const data = await callApiMethod('post', '/auth/login', { email, password })
-    if (data?.token) localStorage.setItem('access_token', data.token)
-    return { token: data?.token, usuario: data?.usuario }
-  } catch (error) {
-    console.error('Error en authLogin:', error)
-    console.error('Endpoint intentado: /auth/login')
-    throw error
-  }
+  const data = await callApiMethod('post', '/auth/login', { email, password })
+  if (data?.token) localStorage.setItem('access_token', data.token)
+  return { token: data?.token, usuario: data?.usuario }
 }
 
 export async function getMe() {
   if (!useBackend) throw new Error('Backend requerido')
-  const data = await callApiMethod('get', '/auth/me')
+  const data = await callApiMethod('get', '/user/me')
   return data
 }
 
@@ -89,7 +91,13 @@ export async function updateContent(moduleId, id, payload) {
   const path = contentPath(moduleId)
   if (!useBackend) throw new Error('Backend requerido')
   if (!path) throw new Error(`No hay endpoint para: ${moduleId}`)
-  const data = await callApiMethod('put', `${path}/${encodeURIComponent(id)}`, payload)
+  
+  // Foods, Hotels, Announcements, Points/POIs y Routes usan PUT, otros módulos usan PATCH
+  // Transport-routes usa PATCH pero puede ser FormData
+  const usePut = ['foods', 'hotels', 'announcements', 'points', 'pois', 'routes'].includes(moduleId);
+  const method = usePut ? 'put' : 'patch';
+  
+  const data = await callApiMethod(method, `${path}/${encodeURIComponent(id)}`, payload)
   return data
 }
 
@@ -108,6 +116,12 @@ export async function getUsers() {
   return Array.isArray(data) ? data : []
 }
 
+export async function getUserById(id) {
+  if (!useBackend) throw new Error('Backend requerido')
+  const data = await callApiMethod('get', `/user/${id}`)
+  return data
+}
+
 export async function createUser(payload) {
   if (!useBackend) throw new Error('Backend requerido')
   const data = await callApiMethod('post', '/user', payload)
@@ -123,24 +137,41 @@ export async function updateUser(id, patch) {
 export async function deleteUser(id) {
   if (!useBackend) throw new Error('Backend requerido')
   const data = await callApiMethod('delete', `/user/${id}`)
-  return data || { ok: true }
+  return data
 }
+
+// Export hotel categories API
+export { hotelCategoriesApi } from './hotelCategoriesApi'
 
 /* PASSWORD RESET - NO implementado en backend actual */
-export async function requestPasswordReset(email, options) {
-  throw new Error('Password reset no implementado en el backend')
+
+export async function requestPasswordReset(email) {
+  // Llama al endpoint del backend para solicitar reseteo
+  const res = await api.post('/user/request-password-reset', { email });
+  return res.data;
 }
+
 
 export async function verifyResetCode(email, code) {
-  throw new Error('Password reset no implementado en el backend')
+  // Llama al endpoint del backend para verificar el token
+  const res = await api.get(`/user/verify-reset-token?email=${encodeURIComponent(email)}&token=${encodeURIComponent(code)}`);
+  return res.data;
 }
 
-export async function resetPassword(email, code, newPassword) {
-  throw new Error('Password reset no implementado en el backend')
+
+export async function resetPassword(email, token, newPassword) {
+  // Llama al endpoint del backend para cambiar la contraseña
+  const res = await api.post('/user/reset-password', { email, token, newPassword });
+  return res.data;
 }
 
 export async function completeInitialPasswordSetup(email, newPassword) {
-  throw new Error('Password reset no implementado en el backend')
+  if (!useBackend) throw new Error('Backend requerido')
+  // Enviar email y newPassword porque el endpoint no usa autenticación JWT
+  const data = await callApiMethod('post', '/auth/password/initial', { email, newPassword })
+  // El backend devuelve token nuevo, actualizarlo
+  if (data?.token) localStorage.setItem('access_token', data.token)
+  return data
 }
 
 /* MODULES */

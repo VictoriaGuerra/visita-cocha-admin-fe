@@ -25,6 +25,12 @@ try {
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('access_token')
   if (token) config.headers.Authorization = `Bearer ${token}`
+  
+  // Si estamos enviando FormData, eliminar Content-Type para que el navegador lo establezca automáticamente con boundary
+  if (config.data instanceof FormData) {
+    delete config.headers['Content-Type']
+  }
+  
   return config
 })
 

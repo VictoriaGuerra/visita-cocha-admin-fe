@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import * as api from '../../api';
 import '../../styles/common.css';
 import '../../styles/forms.css';
@@ -8,16 +8,22 @@ import '../../styles/categories.css';
 const AttractionForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const isEdit = Boolean(id);
+  const location = useLocation();
+  const isView = location.pathname.includes('/view/');
+  const isEdit = Boolean(id) && !isView;
+
+  console.log('🆔 ID desde URL params:', id);
+  console.log('📝 Modo de edición:', isEdit);
 
   const [formData, setFormData] = useState({
     name: '',
+    slug: '',
     description: '',
     coverUrl: '',
     available: true,
+    active: true,
     isFeatured: false,
-    categories: [],
-    mainCategories: [],
+    categoria: '', // Una sola categoría como string (se mapea a categories[])
     location: {
       address: '',
       coords: {
@@ -32,10 +38,7 @@ const AttractionForm = () => {
     },
     accessibility: '',
     rating: 0,
-    order: 0,
-    faq: [],
-    foods: [],
-    historyId: ''
+    order: 0
   });
 
   const [loading, setLoading] = useState(false);
@@ -46,21 +49,86 @@ const AttractionForm = () => {
   const [mainCategoryOptions, setMainCategoryOptions] = useState([]);
 
   useEffect(() => {
-    if (isEdit) {
+    loadCategories();
+    if ((isEdit || isView) && id) {
       loadAttraction();
     }
-  }, [id]);
-
-  useEffect(() => {
-    loadCategories();
-  }, []);
+  }, [id, isEdit, isView]);
 
   const loadAttraction = async () => {
     try {
       setLoading(true);
-      const attraction = await api.getContentById('attractions', id);
-      setFormData(attraction);
+      console.log('🔄 Cargando atracción con ID:', id);
+      
+      const response = await api.getContentById('attractions', id);
+      const data = response.data || response;
+      
+      console.log('📥 RESPUESTA COMPLETA del backend:', JSON.stringify(data, null, 2));
+      console.log('🔍 ID del registro recibido:', data._id);
+      console.log('🔍 Name del registro recibido:', data.name);
+      console.log('🔍 Slug del registro recibido:', data.slug);
+      console.log('🔍 Categorías del backend:', data.categories);
+      console.log('🔍 Location del backend:', data.location);
+      console.log('🔍 Coords del backend:', data.location?.coords);
+      console.log('🔍 Rating del backend:', data.rating);
+      console.log('🔍 Order del backend:', data.order);
+      
+      // Mapear TODOS los datos del backend al formato del formulario
+      const mappedData = {
+        name: data.name || '',
+        slug: data.slug || '',
+        description: data.description || '',
+        coverUrl: data.coverUrl || '',
+        available: data.available !== undefined ? data.available : true,
+        active: data.active !== undefined ? data.active : true,
+        isFeatured: data.isFeatured !== undefined ? data.isFeatured : false,
+        // Categoría: puede ser array o string
+        categoria: Array.isArray(data.categories) && data.categories.length > 0 
+          ? data.categories[0] 
+          : (typeof data.categories === 'string' ? data.categories : ''),
+        // Location: asegurar estructura completa
+        location: {
+          address: data.location?.address || '',
+          coords: {
+            lat: data.location?.coords?.lat || '',
+            lng: data.location?.coords?.lng || ''
+          }
+        },
+        // Contact: estructura completa según MongoDB
+        contact: {
+          phone: data.contact?.phone || '',
+          mail: data.contact?.mail || '',
+          link: data.contact?.link || ''
+        },
+        accessibility: data.accessibility || '',
+        rating: data.rating !== undefined ? Number(data.rating) : 0,
+        order: data.order !== undefined ? Number(data.order) : 0
+      };
+      
+      console.log('✅ Datos mapeados para el estado:', {
+        nombre: mappedData.name,
+        descripcion: mappedData.description.substring(0, 20) + '...',
+        imagen: mappedData.coverUrl ? 'SÍ' : 'NO',
+        categoria: mappedData.categoria,
+        direccion: mappedData.location.address,
+        accesibilidad: mappedData.accessibility,
+        rating: mappedData.rating,
+        order: mappedData.order
+      });
+      
+      console.log('🎯 ANTES de setFormData - valor que voy a setear:', {
+        name: mappedData.name,
+        description: mappedData.description,
+        categoria: mappedData.categoria,
+        coverUrl: mappedData.coverUrl
+      });
+      
+      setFormData(mappedData);
+      
+      console.log('✅ setFormData EJECUTADO');
+      
     } catch (err) {
+      console.error('❌ Error al cargar la atracción:', err);
       setError('Error al cargar la atracción');
     } finally {
       setLoading(false);
@@ -69,10 +137,9 @@ const AttractionForm = () => {
 
   const loadCategories = async () => {
     try {
-      const cats = await api.getContentList('attraction-categories');
-      setCategoryOptions(Array.isArray(cats) ? cats : []);
-      const main = await api.getContentList('main-categories');
-      setMainCategoryOptions(Array.isArray(main) ? main : []);
+      // Categorías simples como strings
+      const categorias = ['Popular', 'Parques', 'Histórico', 'Museos', 'Tiendas', 'Iglesias', 'Plazas'];
+      setCategoryOptions(categorias);
     } catch (err) {
       console.error('Error loading categories:', err);
     }
@@ -80,6 +147,25 @@ const AttractionForm = () => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+    
+    // Si cambia el nombre, generar slug automáticamente
+    if (name === 'name' && !isEdit) {
+      const slug = value
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Eliminar acentos
+        .replace(/[^a-z0-9\s-]/g, '') // Eliminar caracteres especiales
+        .replace(/\s+/g, '-') // Reemplazar espacios con guiones
+        .replace(/-+/g, '-') // Reemplazar múltiples guiones con uno solo
+        .replace(/^-|-$/g, ''); // Eliminar guiones al inicio y final
+      
+      setFormData(prev => ({
+        ...prev,
+        name: value,
+        slug: slug
+      }));
+      return;
+    }
     
     if (name.includes('.')) {
       // Manejo de campos anidados (location.address, contact.phone, etc.)
@@ -115,18 +201,11 @@ const AttractionForm = () => {
     }
   };
 
-  const handleCategoryChange = (category, field) => {
-    setFormData(prev => {
-      const currentCategories = prev[field] || [];
-      const newCategories = currentCategories.includes(category)
-        ? currentCategories.filter(c => c !== category)
-        : [...currentCategories, category];
-      
-      return {
-        ...prev,
-        [field]: newCategories
-      };
-    });
+  const handleCategoryChange = (category) => {
+    setFormData(prev => ({
+      ...prev,
+      categoria: category
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -136,15 +215,42 @@ const AttractionForm = () => {
     try {
       setLoading(true);
 
+      // Validar que tenga categoría
+      if (!formData.categoria) {
+        setError('Debes seleccionar una categoría');
+        setLoading(false);
+        return;
+      }
+
+      // Enviar SOLO los campos que acepta el DTO del backend (en español)
+      const payload = {
+        nombre: formData.name,
+        descripcion: formData.description,
+        ubicacion: formData.location.address || 'Sin dirección especificada',
+        imagen: formData.coverUrl,
+        categoria: formData.categoria
+      };
+      
+      // Campos opcionales
+      if (formData.accessibility) payload.horario = formData.accessibility;
+      if (formData.contact.phone) payload.telefono = formData.contact.phone;
+      if (formData.active !== undefined) payload.activo = formData.active;
+
+      console.log('📤 Datos que se enviarán al backend:', payload);
+
       if (isEdit) {
-        await api.updateContent('attractions', id, formData);
+        await api.updateContent('attractions', id, payload);
+        console.log('✅ Atracción actualizada exitosamente');
       } else {
-        await api.createContent('attractions', formData);
+        const response = await api.createContent('attractions', payload);
+        console.log('✅ Atracción creada exitosamente:', response);
       }
 
       navigate('/modules/attractions');
     } catch (err) {
-      setError('Error al guardar la atracción');
+      console.error('❌ Error completo:', err);
+      console.error('❌ Respuesta del servidor:', err.response?.data);
+      setError(err.response?.data?.message || 'Error al guardar la atracción');
     } finally {
       setLoading(false);
     }
@@ -158,6 +264,17 @@ const AttractionForm = () => {
     return <div className="loading">Cargando...</div>;
   }
 
+  console.log('🎨 RENDERIZANDO formulario con formData:', {
+    name: formData.name,
+    description: formData.description?.substring(0, 30),
+    categoria: formData.categoria,
+    coverUrl: formData.coverUrl,
+    address: formData.location?.address,
+    phone: formData.contact?.phone,
+    rating: formData.rating,
+    order: formData.order
+  });
+
   return (
     <div className="form-container">
       <div className="form-header">
@@ -170,7 +287,7 @@ const AttractionForm = () => {
           >
             ← Volver a la lista
           </button>
-          <h2>{isEdit ? 'Editar Atracción Turística' : 'Nueva Atracción Turística'}</h2>
+          <h2>{isView ? 'Ver Atracción Turística' : isEdit ? 'Editar Atracción Turística' : 'Nueva Atracción Turística'}</h2>
         </div>
       </div>
 
@@ -181,6 +298,7 @@ const AttractionForm = () => {
       )}
 
       <form onSubmit={handleSubmit} className="attraction-form">
+        <fieldset disabled={isView} style={{ border: 'none', padding: 0, margin: 0 }}>
         {/* Información básica */}
         <div className="form-section">
           <h3>Información Básica</h3>
@@ -196,6 +314,23 @@ const AttractionForm = () => {
               required
               className="form-control"
             />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="slug">Slug (URL amigable) *</label>
+            <input
+              type="text"
+              id="slug"
+              name="slug"
+              value={formData.slug}
+              onChange={handleChange}
+              required
+              className="form-control"
+              placeholder="mi-atractivo-turistico"
+            />
+            <small style={{ color: '#6b7280', fontSize: '12px' }}>
+              Se genera automáticamente del nombre. Debe ser único, sin espacios ni caracteres especiales.
+            </small>
           </div>
 
           <div className="form-group">
@@ -247,6 +382,18 @@ const AttractionForm = () => {
               <label>
                 <input
                   type="checkbox"
+                  name="active"
+                  checked={formData.active}
+                  onChange={handleChange}
+                />
+                {' '}Activo
+              </label>
+            </div>
+
+            <div className="form-group">
+              <label>
+                <input
+                  type="checkbox"
                   name="isFeatured"
                   checked={formData.isFeatured}
                   onChange={handleChange}
@@ -259,47 +406,30 @@ const AttractionForm = () => {
 
         {/* Categorías */}
         <div className="form-section">
-          <h3>Categorías</h3>
+          <h3>Categoría *</h3>
           
           <div className="form-group">
-            <label>Categorías</label>
+            <label>Selecciona una categoría</label>
             <div className="pill-group">
-              {categoryOptions.length === 0 && <div className="alert alert-info">No hay categorías. Administra en <a href="/modules/categories">Categorías</a></div>}
               {categoryOptions.map(cat => {
-                const active = formData.categories.includes(cat.id);
+                const active = formData.categoria === cat;
                 return (
                   <button
                     type="button"
-                    key={cat.id}
+                    key={cat}
                     className={`pill ${active ? 'active' : ''}`}
-                    onClick={() => handleCategoryChange(cat.id, 'categories')}
-                    title={cat.id}
+                    onClick={() => handleCategoryChange(cat)}
                   >
-                    {cat.name}
+                    {cat}
                   </button>
                 );
               })}
             </div>
-          </div>
-
-          <div className="form-group">
-            <label>Categorías Principales</label>
-            <div className="pill-group">
-              {mainCategoryOptions.map(cat => {
-                const active = formData.mainCategories.includes(cat.id);
-                return (
-                  <button
-                    type="button"
-                    key={cat.id}
-                    className={`pill ${active ? 'active' : ''}`}
-                    onClick={() => handleCategoryChange(cat.id, 'mainCategories')}
-                    title={cat.name}
-                  >
-                    {cat.name}
-                  </button>
-                );
-              })}
-            </div>
+            {!formData.categoria && (
+              <small style={{ color: '#dc2626', fontSize: '12px' }}>
+                Debes seleccionar una categoría
+              </small>
+            )}
           </div>
         </div>
 
@@ -361,6 +491,7 @@ const AttractionForm = () => {
               value={formData.contact.phone}
               onChange={handleChange}
               className="form-control"
+              placeholder="4-4123456"
             />
           </div>
 
@@ -453,12 +584,15 @@ const AttractionForm = () => {
         {/* Botones de acción */}
         <div className="form-actions">
           <button type="button" onClick={handleCancel} className="btn btn-secondary">
-            Cancelar
+            {isView ? 'Volver' : 'Cancelar'}
           </button>
-          <button type="submit" disabled={loading} className="btn btn-primary">
-            {loading ? 'Guardando...' : (isEdit ? 'Actualizar' : 'Crear')}
-          </button>
+          {!isView && (
+            <button type="submit" disabled={loading} className="btn btn-primary">
+              {loading ? 'Guardando...' : (isEdit ? 'Actualizar' : 'Crear')}
+            </button>
+          )}
         </div>
+        </fieldset>
       </form>
     </div>
   );

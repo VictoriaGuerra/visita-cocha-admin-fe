@@ -1,6 +1,6 @@
 .sidebar {
   width: var(--sidebar-width);
-  background: #fff;
+  background: linear-gradient(180deg, #e3f2fd 0%, #f8fafc 100%);
   display: flex;
   flex-direction: column;
   height: 100vh;
@@ -9,6 +9,7 @@
   left: 0;
   z-index: 20;
   padding: 1.5rem 1rem;
+  box-shadow: 2px 0 12px rgba(63,144,142,0.07);
 }
 
 .sidebar-header {
@@ -78,32 +79,88 @@
   padding-top: 1rem;
   border-top: 1px solid var(--gray-100);
   margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.user-info-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+  border-radius: 12px;
+  border: 1px solid #e0f2f1;
+  box-shadow: 0 2px 8px rgba(63,144,142,0.08);
+}
+
+.user-avatar {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #52968B 0%, #55b871 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.5rem;
+}
+
+.user-details {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.user-email {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #366c63;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-role {
+  font-size: 0.7rem;
+  color: #52968B;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .logout-button {
   width: 100%;
   display: flex;
   align-items: center;
+  justify-content: center;
   padding: 0.75rem 1rem;
-  color: var(--gray-700);
-  border: none;
-  background: transparent;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  background: linear-gradient(135deg, #ffffff 0%, #fef2f2 100%);
   border-radius: 8px;
   cursor: pointer;
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(220,38,38,0.1);
 }
 
 .logout-button i {
-  font-size: 1.25rem;
-  margin-right: 0.75rem;
-  width: 24px;
-  text-align: center;
+  font-size: 1rem;
+  margin-right: 0.5rem;
 }
 
 .logout-button:hover {
-  background: var(--error-50);
-  color: var(--error-600);
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  border-color: #fca5a5;
+  color: #991b1b;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220,38,38,0.2);
 }
 
 /* Main content adjustment */

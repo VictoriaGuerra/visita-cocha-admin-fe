@@ -1,0 +1,177 @@
+/* Modern List/Table Styles for Admin */
+.modern-list-card {
+  background: linear-gradient(135deg, #f8fafc 0%, #e0f7fa 100%);
+  border-radius: 1.25rem;
+  box-shadow: 0 4px 24px rgba(63,144,142,0.10);
+  padding: 0;
+  margin-bottom: 2rem;
+  border: 1px solid #e0f2f1;
+  overflow: hidden;
+}
+.modern-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem 1rem 2rem;
+  background: transparent;
+  border-bottom: 1px solid #e0f2f1;
+}
+.modern-list-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #366c63;
+  margin: 0;
+}
+.modern-list-searchbar {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+.modern-list-searchinput {
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.75rem;
+  border: 1px solid #b2dfdb;
+  background: #fff;
+  font-size: 1rem;
+  min-width: 220px;
+  transition: border 0.2s;
+}
+.modern-list-searchinput:focus {
+  border: 1.5px solid #52968B;
+  outline: none;
+}
+.modern-list-addbtn {
+  background: linear-gradient(90deg, #52968B 0%, #55b871 100%);
+  color: #fff;
+  border: none;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  font-size: 1rem;
+  box-shadow: 0 2px 8px rgba(63,144,142,0.08);
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.modern-list-addbtn:hover {
+  background: linear-gradient(90deg, #418177 0%, #55b871 100%);
+  box-shadow: 0 4px 16px rgba(63,144,142,0.13);
+}
+.modern-list-tablewrap {
+  padding: 0;
+  background: transparent;
+}
+.modern-list-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: transparent;
+}
+.modern-list-table th, .modern-list-table td {
+  padding: 1.1rem 1.2rem;
+  border-bottom: 1px solid #e0f2f1;
+  background: transparent;
+}
+.modern-list-table th {
+  background: #e0f7fa;
+  color: #366c63;
+  font-weight: 700;
+  font-size: 1.05rem;
+  border-top: none;
+}
+.modern-list-row {
+  transition: background 0.18s, box-shadow 0.18s;
+  background: #fff;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 4px rgba(63,144,142,0.04);
+}
+.modern-list-row:hover {
+  background: #f1fdfb;
+  box-shadow: 0 2px 12px rgba(63,144,142,0.10);
+}
+.modern-list-row.expanded {
+  background: #e0f7fa;
+}
+.modern-list-details-row td {
+  background: #f8fafc;
+  border-bottom: none;
+  padding: 1.5rem 2rem;
+}
+.modern-list-details {
+  font-size: 1rem;
+  color: #366c63;
+}
+.modern-list-badge {
+  display: inline-block;
+  background: #e0f7fa;
+  color: #52968B;
+  border-radius: 12px;
+  padding: 2px 10px;
+  font-size: 0.92em;
+  margin-right: 4px;
+  margin-bottom: 2px;
+}
+.modern-list-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+.modern-list-actionbtn {
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 7px 12px;
+  border-radius: 8px;
+  transition: background 0.15s, color 0.15s;
+  font-size: 1.1rem;
+}
+.modern-list-actionbtn.view:hover {
+  background: #e0f7fa;
+  color: #418177;
+}
+.modern-list-actionbtn.edit:hover {
+  background: #d1fae5;
+  color: #55b871;
+}
+.modern-list-actionbtn.delete:hover {
+  background: #ffeaea;
+  color: #ED6C9C;
+}
+.modern-list-pagination {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin: 2rem 2rem 1.5rem 2rem;
+}
+.modern-list-pageitem {
+  padding: 0.6rem 1.2rem;
+  border: 1.5px solid #b2dfdb;
+  border-radius: 0.75rem;
+  background: #fff;
+  color: #366c63;
+  font-weight: 500;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s, border 0.18s;
+}
+.modern-list-pageitem.active, .modern-list-pageitem:hover {
+  background: linear-gradient(90deg, #52968B 0%, #55b871 100%);
+  color: #fff;
+  border-color: #52968B;
+}
+@media (max-width: 700px) {
+  .modern-list-header, .modern-list-pagination {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+    padding: 1rem;
+  }
+  .modern-list-table th, .modern-list-table td {
+    padding: 0.7rem 0.5rem;
+    font-size: 0.98em;
+  }
+  .modern-list-details-row td {
+    padding: 1rem 1rem;
+  }
+}

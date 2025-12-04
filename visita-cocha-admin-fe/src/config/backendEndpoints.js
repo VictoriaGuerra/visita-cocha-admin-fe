@@ -6,7 +6,10 @@ export const BACKEND_ENDPOINTS = {
   foods: '/foods',
   announcements: '/announcements',
   pois: '/pois',
-  routes: '/routes',
+  points: '/pois',  // Alias para puntos de interés
+  routes: '/rutas',
+  itineraries: '/itineraries',
+  'transport-routes': '/transport-routes',
   'attraction-categories': '/attraction-categories',
   'restaurant-categories': '/restaurant-categories',
   'main-categories': '/main-categories',
@@ -22,7 +25,10 @@ export const BACKEND_CAPABILITIES = {
   foods: { create: true, update: true, delete: true },
   announcements: { create: true, update: true, delete: true },
   pois: { create: true, update: true, delete: true },
+  points: { create: true, update: true, delete: true },  // Alias para puntos de interés
   routes: { create: true, update: true, delete: true },
+  itineraries: { create: true, update: true, delete: true },
+  'transport-routes': { create: true, update: true, delete: true },
   'attraction-categories': { create: true, update: true, delete: true },
   'restaurant-categories': { create: true, update: true, delete: true },
   'main-categories': { create: true, update: true, delete: true },

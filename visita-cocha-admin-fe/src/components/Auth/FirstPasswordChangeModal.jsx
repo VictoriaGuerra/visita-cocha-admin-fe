@@ -12,12 +12,21 @@ function validate(p){
 }
 
 export default function FirstPasswordChangeModal(){
-  const { user, completeInitialPasswordSetup } = useAuth()
+  const { user, completeInitialPasswordSetup, logout } = useAuth()
   const [pass1, setPass1] = useState('')
   const [pass2, setPass2] = useState('')
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState('')
   const [msg, setMsg] = useState('')
+  const [success, setSuccess] = useState(false)
+
+  console.log('[FirstPasswordChangeModal] 🔍 Estado actual:', {
+    'user existe': !!user,
+    'user.email': user?.email,
+    'user.mustChangePassword': user?.mustChangePassword,
+    'user.debe_cambiar_password': user?.debe_cambiar_password,
+    'mostrará modal': !!(user?.mustChangePassword)
+  })
 
   const v = validate(pass1)
   const strong = v.length && v.lower && v.upper && v.number
@@ -30,12 +39,25 @@ export default function FirstPasswordChangeModal(){
     setSaving(true)
     try{
       await completeInitialPasswordSetup(pass1)
-      setMsg('Contraseña actualizada. Ya puedes continuar.')
-    }catch(e){ setErr(e.message || 'Error al actualizar contraseña') }
-    setSaving(false)
+      setSuccess(true)
+      setMsg('✅ Contraseña actualizada exitosamente. Serás redirigido al login para ingresar con tu nueva contraseña...')
+      
+      // Esperar 3 segundos para que el usuario lea el mensaje
+      setTimeout(() => {
+        logout() // Cerrar sesión y redirigir al login
+      }, 3000)
+    }catch(e){ 
+      setErr(e.message || 'Error al actualizar contraseña')
+      setSaving(false)
+    }
   }
 
-  if (!user?.mustChangePassword) return null
+  if (!user?.mustChangePassword) {
+    console.log('[FirstPasswordChangeModal] ❌ Modal NO se mostrará - mustChangePassword es false o user no existe')
+    return null
+  }
+
+  console.log('[FirstPasswordChangeModal] ✅ Modal SE MOSTRARÁ')
 
   return (
     <div className="vc-modal-overlay" style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:300 }}>
@@ -58,7 +80,9 @@ export default function FirstPasswordChangeModal(){
           </ul>
 
           <div style={{ display:'flex', justifyContent:'flex-end', gap:8 }}>
-            <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Guardando…' : 'Guardar'}</button>
+            <button type="submit" className="btn btn-primary" disabled={saving || success}>
+              {saving ? 'Guardando…' : success ? 'Redirigiendo...' : 'Guardar'}
+            </button>
           </div>
         </form>
       </div>

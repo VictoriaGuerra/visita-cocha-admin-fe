@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  admin-fe:
+    build: .
+    container_name: visita-cocha-admin-fe
+    ports:
+      - "${FE_PORT:-5173}:5173"
+    environment:
+      - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost:3000}
+      - VITE_USE_BACKEND=${VITE_USE_BACKEND:-true}
+      - NODE_ENV=${NODE_ENV:-production}
+    networks:
+      - visita-cocha-network
+    depends_on:
+      - admin-be
+
+  admin-be:
+    image: visita-cocha-backend:latest
+    container_name: visita-cocha-admin-be
+    ports:
+      - "${BE_PORT:-3000}:3000"
+    environment:
+      - MONGODB_URI=${MONGODB_URI:-mongodb://mongo:27017/visita-cocha}
+      - JWT_SECRET=${JWT_SECRET:-tu-secret-aqui}
+      - NODE_ENV=${NODE_ENV:-production}
+    networks:
+      - visita-cocha-network
+    depends_on:
+      - mongo
+
+  mongo:
+    image: mongo:5.0
+    container_name: visita-cocha-mongo
+    ports:
+      - "${MONGO_PORT:-27017}:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=visita-cocha
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USER:-admin}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD:-password}
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - visita-cocha-network
+
+networks:
+  visita-cocha-network:
+    driver: bridge
+
+volumes:
+  mongo-data:
