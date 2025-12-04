@@ -1,0 +1,13 @@
+.DS_Store
+.env
+.env.local
+/node_modules/
+
+# React Router
+/.react-router/
+/build/
+
+# Local secret keys folder (store service-account JSON here)
+keys/
+# Or if you prefer a different folder name, add it here
+# secrets/
