@@ -29,6 +29,7 @@ import FirstPasswordChangeModal from './components/Auth/FirstPasswordChangeModal
 import PasswordResetRequest from './pages/Auth/PasswordResetRequest';
 import PasswordResetConfirm from './pages/Auth/PasswordResetConfirm';
 import Emails from './pages/Dev/Emails';
+import TransportRoutes from './pages/TransportRoutes';
 
 const AuthenticatedContent = () => {
   const { user } = useContext(AuthContext);
@@ -49,6 +50,7 @@ const AuthenticatedContent = () => {
     <Layout>
       <FirstPasswordChangeModal />
       <Routes>
+        <Route path="/routes" element={<TransportRoutes />} />
         <Route path="/" element={<Dashboard />} />
   <Route path="/users" element={isSuperAdminRole ? <UsersList /> : <Navigate to="/" replace />} />
   <Route path="/users/new" element={isSuperAdminRole ? <UserForm /> : <Navigate to="/" replace />} />

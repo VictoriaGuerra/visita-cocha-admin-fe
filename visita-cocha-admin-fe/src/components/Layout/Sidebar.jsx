@@ -75,6 +75,11 @@ const Sidebar = () => {
       icon: 'fa-map-marker-alt',
     },
     {
+      title: 'Rutas',
+      path: '/routes',
+      icon: 'fa-route',
+    },
+    {
       title: 'Usuarios',
       path: '/users',
       icon: 'fa-users',
