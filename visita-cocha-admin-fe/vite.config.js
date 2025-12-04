@@ -62,6 +62,11 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      '/transport-routes': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        secure: false,
+      },
       '/attraction-categories': {
         target: 'http://localhost:3000',
         changeOrigin: true,

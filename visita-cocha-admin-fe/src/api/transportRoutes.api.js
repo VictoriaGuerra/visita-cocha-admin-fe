@@ -32,3 +32,17 @@ export async function deleteTransportRoute(id) {
   if (res.status === 204) return null;
   return res.json();
 }
+
+export async function importAllRoutesFromFolder() {
+  const res = await fetch(`${API_URL}/transport-routes/import`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Error importing routes: ${res.status} ${text}`);
+  }
+  return res.json();
+}

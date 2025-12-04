@@ -42,7 +42,7 @@ const AuthenticatedContent = () => {
     <Layout>
       <FirstPasswordChangeModal />
       <Routes>
-        <Route path="/admin/transport-routes" element={<TransportRoutes />} />
+        <Route path="/routes" element={<TransportRoutes />} />
         <Route path="/" element={<Dashboard />} />
   <Route path="/users" element={isSuper ? <UsersList /> : <Navigate to="/" replace />} />
   <Route path="/users/new" element={isSuper ? <UserForm onClose={() => window.history.back()} /> : <Navigate to="/" replace />} />

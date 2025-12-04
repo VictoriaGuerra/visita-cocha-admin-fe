@@ -38,9 +38,16 @@ async function callApiMethod(method, path, payload) {
 /* AUTHENTICATION */
 export async function authLogin(email, password) {
   if (!useBackend) throw new Error('Backend requerido')
-  const data = await callApiMethod('post', '/login', { email, password })
-  if (data?.token) localStorage.setItem('access_token', data.token)
-  return { token: data?.token, usuario: data?.usuario }
+  // El endpoint correcto es /auth/login según el backend
+  try {
+    const data = await callApiMethod('post', '/auth/login', { email, password })
+    if (data?.token) localStorage.setItem('access_token', data.token)
+    return { token: data?.token, usuario: data?.usuario }
+  } catch (error) {
+    console.error('Error en authLogin:', error)
+    console.error('Endpoint intentado: /auth/login')
+    throw error
+  }
 }
 
 export async function getMe() {
