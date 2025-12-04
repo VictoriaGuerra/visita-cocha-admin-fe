@@ -1,44 +1,12 @@
-// index.js — Adaptador de API con fallback a mock
+// API Adapter para Backend
 import api from './api'
-import * as mockApi from './mockApi'
 import { BACKEND_ENDPOINTS } from '../config/backendEndpoints'
 
-// Variable para decidir si usar backend real
+export * from './visitaCochaApi'
+
 const useBackend = import.meta.env.VITE_USE_BACKEND === 'true'
 export const USE_BACKEND = useBackend
 
-// Helper para manejar errores y fallback al mock
-async function safeBackend(fn, fallback) {
-  if (!useBackend) return fallback()
-  try {
-    return await fn()
-  } catch (e) {
-    const msg = e?.message ? String(e.message) : ''
-    const code = e?.code ? String(e.code) : ''
-    const status = e?.response?.status
-
-    // Fallback to mock when backend is unreachable (network) or when the
-    // endpoint is missing / auth failed (404, 401, 403) to keep the UI usable
-    if (
-      code === 'ERR_NETWORK' ||
-      msg.toLowerCase().includes('network error') ||
-      msg.toLowerCase().includes('connection refused') ||
-      status === 401 || status === 403 || status === 404
-    ) {
-      console.warn('[api adapter] Backend no disponible o endpoint no encontrado. Usando fallback mock.', msg || status)
-      try {
-        return await fallback()
-      } catch (fe) {
-        console.warn('[api adapter] Fallback mock también falló:', fe)
-        throw e
-      }
-    }
-    console.warn('[api adapter] Fallo backend:', msg || status)
-    throw e
-  }
-}
-
-// Helper para llamar rutas probando con y sin prefijo /api
 async function callApiMethod(method, path, payload) {
   const candidates = []
   if (path.startsWith('/api')) {
@@ -60,245 +28,142 @@ async function callApiMethod(method, path, payload) {
       }
     } catch (e) {
       lastErr = e
-      // Si es 401/403 queremos propagar inmediatamente (no intentar otra ruta)
       const status = e?.response?.status
       if (status === 401 || status === 403) throw e
-      // si falla, probar siguiente candidato
     }
   }
-  // Si llegamos aquí, lanzar el último error para que safeBackend decida el fallback
   throw lastErr || new Error('No response from backend')
 }
 
-/* =======================
-   AUTHENTICATION
-======================= */
+/* AUTHENTICATION */
 export async function authLogin(email, password) {
-  // Intentar backend primero; si responde 401/403, intentar fallback al mock
+  if (!useBackend) throw new Error('Backend requerido')
+  // El endpoint correcto es /auth/login según el backend
   try {
-    const result = await safeBackend(
-      async () => {
-        const data = await callApiMethod('post', '/login', { email, password })
-        if (data?.token) localStorage.setItem('access_token', data.token)
-        return { token: data?.token }
-      },
-      () => mockApi.authLogin(email, password)
-    )
-    return result
-  } catch (e) {
-    const status = e?.response?.status
-    if (status === 401 || status === 403) {
-      // Backend rechazó credenciales: permitir login contra mock para demo
-      try {
-        const mockRes = await mockApi.authLogin(email, password)
-        if (mockRes?.token) localStorage.setItem('access_token', mockRes.token)
-        return { token: mockRes?.token }
-      } catch (me) {
-        throw e
-      }
-    }
-    throw e
+    const data = await callApiMethod('post', '/auth/login', { email, password })
+    if (data?.token) localStorage.setItem('access_token', data.token)
+    return { token: data?.token, usuario: data?.usuario }
+  } catch (error) {
+    console.error('Error en authLogin:', error)
+    console.error('Endpoint intentado: /auth/login')
+    throw error
   }
 }
 
-export async function getMe(hintEmail) {
-  return safeBackend(
-    async () => {
-      const data = await callApiMethod('get', '/auth/me')
-      return data
-    },
-    async () => {
-      const users = await mockApi.getUsers()
-      if (hintEmail) return users.find(u => u.email === hintEmail) || users[0] || null
-      return users[0] || null
-    }
-  )
+export async function getMe() {
+  if (!useBackend) throw new Error('Backend requerido')
+  const data = await callApiMethod('get', '/auth/me')
+  return data
 }
 
-/* =======================
-   CONTENT / MODULES
-======================= */
+/* CONTENT / MODULES */
 function contentPath(moduleId) {
   return BACKEND_ENDPOINTS[moduleId] || null
 }
 
 export async function getContentList(moduleId) {
   const path = contentPath(moduleId)
-  if (!useBackend) throw new Error('USE_BACKEND=false, habilita VITE_USE_BACKEND para usar API real')
-  if (!path) throw new Error(`No hay endpoint mapeado para módulo: ${moduleId}`)
+  if (!useBackend) throw new Error('Backend requerido')
+  if (!path) throw new Error(`No hay endpoint para: ${moduleId}`)
   const data = await callApiMethod('get', path)
   return Array.isArray(data) ? data : data?.items || []
 }
 
 export async function getContentById(moduleId, id) {
   const path = contentPath(moduleId)
-  if (!useBackend) throw new Error('USE_BACKEND=false, habilita VITE_USE_BACKEND para usar API real')
-  if (!path) throw new Error(`No hay endpoint mapeado para módulo: ${moduleId}`)
+  if (!useBackend) throw new Error('Backend requerido')
+  if (!path) throw new Error(`No hay endpoint para: ${moduleId}`)
   const data = await callApiMethod('get', `${path}/${encodeURIComponent(id)}`)
   return data
 }
 
 export async function createContent(moduleId, payload) {
   const path = contentPath(moduleId)
-  if (!useBackend) throw new Error('Solo disponible en modo backend')
-  if (!path) throw new Error(`No hay endpoint para crear en módulo ${moduleId}`)
+  if (!useBackend) throw new Error('Backend requerido')
+  if (!path) throw new Error(`No hay endpoint para: ${moduleId}`)
   const data = await callApiMethod('post', path, payload)
   return data
 }
 
 export async function updateContent(moduleId, id, payload) {
   const path = contentPath(moduleId)
-  if (!useBackend) throw new Error('Solo disponible en modo backend')
-  if (!path) throw new Error(`No hay endpoint para actualizar en módulo ${moduleId}`)
+  if (!useBackend) throw new Error('Backend requerido')
+  if (!path) throw new Error(`No hay endpoint para: ${moduleId}`)
   const data = await callApiMethod('put', `${path}/${encodeURIComponent(id)}`, payload)
   return data
 }
 
 export async function deleteContent(moduleId, id) {
   const path = contentPath(moduleId)
-  if (!useBackend) throw new Error('Solo disponible en modo backend')
-  if (!path) throw new Error(`No hay endpoint para eliminar en módulo ${moduleId}`)
+  if (!useBackend) throw new Error('Backend requerido')
+  if (!path) throw new Error(`No hay endpoint para: ${moduleId}`)
   const data = await callApiMethod('delete', `${path}/${encodeURIComponent(id)}`)
   return data || { ok: true }
 }
 
-/* =======================
-   USERS
-======================= */
+/* USERS */
 export async function getUsers() {
-  return safeBackend(
-    async () => {
-      const data = await callApiMethod('get', '/users')
-      return Array.isArray(data) ? data : []
-    },
-    () => mockApi.getUsers()
-  )
+  if (!useBackend) throw new Error('Backend requerido')
+  const data = await callApiMethod('get', '/user')
+  return Array.isArray(data) ? data : []
 }
 
 export async function createUser(payload) {
-  return safeBackend(
-    async () => {
-      const data = await callApiMethod('post', '/users', payload)
-      return data
-    },
-    () => mockApi.createUser(payload)
-  )
+  if (!useBackend) throw new Error('Backend requerido')
+  const data = await callApiMethod('post', '/user', payload)
+  return data
 }
 
 export async function updateUser(id, patch) {
-  return safeBackend(
-    async () => {
-      const data = await callApiMethod('put', `/users/${id}`, patch)
-      return data
-    },
-    () => mockApi.updateUser(id, patch)
-  )
+  if (!useBackend) throw new Error('Backend requerido')
+  const data = await callApiMethod('put', `/user/${id}`, patch)
+  return data
 }
 
 export async function deleteUser(id) {
-  return safeBackend(
-    async () => {
-      const data = await callApiMethod('delete', `/users/${id}`)
-      return data || { ok: true }
-    },
-    () => mockApi.deleteUser(id)
-  )
+  if (!useBackend) throw new Error('Backend requerido')
+  const data = await callApiMethod('delete', `/user/${id}`)
+  return data || { ok: true }
 }
 
-/* =======================
-   PASSWORD RESET / FIRST LOGIN
-======================= */
+/* PASSWORD RESET - NO implementado en backend actual */
 export async function requestPasswordReset(email, options) {
-  return safeBackend(
-    async () => {
-      const data = await callApiMethod('post', '/auth/password/reset/request', { email, ...options })
-      return data || { ok: true }
-    },
-    () => mockApi.requestPasswordReset(email, options)
-  )
+  throw new Error('Password reset no implementado en el backend')
 }
 
 export async function verifyResetCode(email, code) {
-  return safeBackend(
-    async () => {
-      const data = await callApiMethod('post', '/auth/password/reset/verify', { email, code })
-      return data || { ok: true }
-    },
-    () => mockApi.verifyResetCode(email, code)
-  )
+  throw new Error('Password reset no implementado en el backend')
 }
 
 export async function resetPassword(email, code, newPassword) {
-  return safeBackend(
-    async () => {
-      const data = await callApiMethod('post', '/auth/password/reset/confirm', { email, code, newPassword })
-      return data || { ok: true }
-    },
-    () => mockApi.resetPassword(email, code, newPassword)
-  )
+  throw new Error('Password reset no implementado en el backend')
 }
 
 export async function completeInitialPasswordSetup(email, newPassword) {
-  return safeBackend(
-    async () => {
-      const data = await callApiMethod('post', '/auth/password/initial', { email, newPassword })
-      return data
-    },
-    () => mockApi.completeInitialPasswordSetup(email, newPassword)
-  )
+  throw new Error('Password reset no implementado en el backend')
 }
 
-/* =======================
-   MODULES
-======================= */
+/* MODULES */
 export async function getModules() {
-  return safeBackend(
-    async () => {
-      const data = await callApiMethod('get', '/modules')
-      return Array.isArray(data) ? data : []
-    },
-    () => mockApi.getModules()
-  )
+  if (!useBackend) throw new Error('Backend requerido')
+  const data = await callApiMethod('get', '/modules')
+  return Array.isArray(data) ? data : []
 }
 
 export async function createModule(payload) {
-  return safeBackend(
-    async () => {
-      const data = await callApiMethod('post', '/modules', payload)
-      return data
-    },
-    () => mockApi.createModule(payload)
-  )
+  if (!useBackend) throw new Error('Backend requerido')
+  const data = await callApiMethod('post', '/modules', payload)
+  return data
 }
 
 export async function updateModule(id, patch) {
-  return safeBackend(
-    async () => {
-      const data = await callApiMethod('put', `/modules/${id}`, patch)
-      return data
-    },
-    () => mockApi.updateModule(id, patch)
-  )
+  if (!useBackend) throw new Error('Backend requerido')
+  const data = await callApiMethod('put', `/modules/${id}`, patch)
+  return data
 }
 
 export async function deleteModule(id) {
-  return safeBackend(
-    async () => {
-      const data = await callApiMethod('delete', `/modules/${id}`)
-      return data || { ok: true }
-    },
-    () => mockApi.deleteModule(id)
-  )
+  if (!useBackend) throw new Error('Backend requerido')
+  const data = await callApiMethod('delete', `/modules/${id}`)
+  return data || { ok: true }
 }
-
-/* =======================
-   SIMULATED EMAILS (solo mock)
-======================= */
-export function getSentEmails() {
-  return mockApi.getSentEmails()
-}
-
-export function clearSentEmails() {
-  return mockApi.clearSentEmails()
-}
-;

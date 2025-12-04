@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { localStoreApi } from '../../api/localStoreApi';
+import * as api from '../../api';
 import '../../styles/common.css';
 import '../../styles/forms.css';
 
@@ -28,11 +28,9 @@ const AnnouncementForm = () => {
   const loadAnnouncement = async () => {
     try {
       setLoading(true);
-      const list = await localStoreApi.getAll('announcements');
-      const item = list.find(x => x.id === id);
-      if (item) setFormData(item); else setError('Anuncio no encontrado');
+      const item = await api.getContentById('announcements', id);
+      setFormData(item);
     } catch (err) {
-      console.error('Error cargando anuncio:', err);
       setError('Error al cargar el anuncio');
     } finally { setLoading(false); }
   };
@@ -55,11 +53,10 @@ const AnnouncementForm = () => {
     if (v) { setError(v); return; }
     try {
       setLoading(true);
-      if (isEdit) await localStoreApi.update('announcements', id, formData);
-      else await localStoreApi.create('announcements', formData);
+      if (isEdit) await api.updateContent('announcements', id, formData);
+      else await api.createContent('announcements', formData);
       navigate('/modules/announcements');
     } catch (err) {
-      console.error('Error guardando anuncio:', err);
       setError('Error al guardar el anuncio');
     } finally { setLoading(false); }
   };

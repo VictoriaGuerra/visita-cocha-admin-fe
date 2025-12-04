@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { localStoreApi } from '../../api/localStoreApi';
+import * as api from '../../api';
 import '../../styles/common.css';
 import '../../styles/forms.css';
 
@@ -49,11 +49,9 @@ const EventForm = () => {
   const loadEvent = async () => {
     try {
       setLoading(true);
-      const events = await localStoreApi.getAll('events');
-      const ev = events.find(e => e.id === id);
-      if (ev) setFormData(ev); else setError('Evento no encontrado');
+      const ev = await api.getContentById('events', id);
+      setFormData(ev);
     } catch (err) {
-      console.error('Error cargando evento:', err);
       setError('Error al cargar el evento');
     } finally { setLoading(false); }
   };
@@ -104,11 +102,10 @@ const EventForm = () => {
     if (v) { setError(v); return; }
     try {
       setLoading(true);
-      if (isEdit) await localStoreApi.update('events', id, formData);
-      else await localStoreApi.create('events', formData);
+      if (isEdit) await api.updateContent('events', id, formData);
+      else await api.createContent('events', formData);
       navigate('/modules/events');
     } catch (err) {
-      console.error('Error guardando evento:', err);
       setError('Error al guardar el evento');
     } finally { setLoading(false); }
   };

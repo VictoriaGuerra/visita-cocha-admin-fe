@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { localStoreApi } from '../../api/localStoreApi';
+import * as api from '../../api';
 import '../../styles/common.css';
 import '../../styles/forms.css';
 import '../../styles/categories.css';
@@ -40,36 +40,28 @@ const RestaurantForm = () => {
   useEffect(() => { if (isEdit) loadRestaurant(); }, [id]);
 
   useEffect(() => {
-    import('../../api/categoriesApi').then(({ categoriesApi }) => {
-      categoriesApi.getAll('restaurants').then(cats => {
-        if (!cats || cats.length === 0) {
-          import('../../data/sampleData').then(({ initializeRestaurantCategories }) => {
-            const seeded = initializeRestaurantCategories();
-            setCategoryOptions(seeded);
-          });
-        } else { setCategoryOptions(cats); }
-      });
-      categoriesApi.getAll('main').then(cats => {
-        if (!cats || cats.length === 0) {
-          import('../../data/sampleData').then(({ initializeMainCategoriesSeed }) => {
-            const seeded = initializeMainCategoriesSeed();
-            setMainCategoryOptions(seeded);
-          });
-        } else { setMainCategoryOptions(cats); }
-      });
-    });
+    loadCategories();
   }, []);
 
   const loadRestaurant = async () => {
     try {
       setLoading(true);
-      const restaurants = await localStoreApi.getAll('restaurants');
-      const restaurant = restaurants.find(r => r.id === id);
-      if (restaurant) setFormData(restaurant); else setError('Restaurante no encontrado');
+      const restaurant = await api.getContentById('restaurants', id);
+      setFormData(restaurant);
     } catch (err) {
-      console.error('Error cargando restaurante:', err);
       setError('Error al cargar el restaurante');
     } finally { setLoading(false); }
+  };
+
+  const loadCategories = async () => {
+    try {
+      const cats = await api.getContentList('restaurant-categories');
+      setCategoryOptions(Array.isArray(cats) ? cats : []);
+      const main = await api.getContentList('main-categories');
+      setMainCategoryOptions(Array.isArray(main) ? main : []);
+    } catch (err) {
+      console.error('Error loading categories:', err);
+    }
   };
 
   const handleChange = (e) => {
@@ -136,11 +128,13 @@ const RestaurantForm = () => {
     if (validationError) { setError(validationError); return; }
     try {
       setLoading(true);
-      if (isEdit) await localStoreApi.update('restaurants', id, formData);
-      else await localStoreApi.create('restaurants', formData);
+      if (isEdit) {
+        await api.updateContent('restaurants', id, formData);
+      } else {
+        await api.createContent('restaurants', formData);
+      }
       navigate('/modules/restaurants');
     } catch (err) {
-      console.error('Error guardando restaurante:', err);
       setError('Error al guardar el restaurante');
     } finally { setLoading(false); }
   };

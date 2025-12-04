@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { localStoreApi } from '../../api/localStoreApi';
+import * as api from '../../api';
 import '../../styles/common.css';
 import '../../styles/forms.css';
 
@@ -45,11 +45,9 @@ const HotelForm = () => {
   const loadHotel = async () => {
     try {
       setLoading(true);
-      const hotels = await localStoreApi.getAll('hotels');
-      const h = hotels.find(x => x.id === id);
-      if (h) setFormData(h); else setError('Hotel no encontrado');
+      const h = await api.getContentById('hotels', id);
+      setFormData(h);
     } catch (err) {
-      console.error('Error cargando hotel:', err);
       setError('Error al cargar el hotel');
     } finally { setLoading(false); }
   };
@@ -99,11 +97,10 @@ const HotelForm = () => {
     if (v) { setError(v); return; }
     try {
       setLoading(true);
-      if (isEdit) await localStoreApi.update('hotels', id, formData);
-      else await localStoreApi.create('hotels', formData);
+      if (isEdit) await api.updateContent('hotels', id, formData);
+      else await api.createContent('hotels', formData);
       navigate('/modules/hotels');
     } catch (err) {
-      console.error('Error guardando hotel:', err);
       setError('Error al guardar el hotel');
     } finally { setLoading(false); }
   };
