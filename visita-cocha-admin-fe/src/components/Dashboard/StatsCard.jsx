@@ -3,10 +3,21 @@ import React from "react";
 import { formatNumber } from "../../utils/helpers";
 import Tooltip from '../../components/Tooltip';
 
+// Función para renderizar el icono de Font Awesome
+const renderIcon = (iconClass) => {
+  if (!iconClass) return null;
+  
+  // Convertir de formato simple (ej: 'fa-users') a clases completas (ej: 'fas fa-users')
+  const iconString = iconClass.includes('fa-') ? iconClass : `fa-${iconClass}`;
+  const fullClass = iconString.startsWith('fa-') ? `fas ${iconString}` : iconString;
+  
+  return <i className={fullClass}></i>;
+};
+
 // StatsCard: uses classes defined in src/styles/dashboard.css
 // Props:
 // - title, value
-// - icon: optional node
+// - icon: optional string (Font Awesome class like 'fa-users' or full class 'fas fa-users')
 // - variant: green|orange|red|purple
 // - tooltip: optional string to show on hover
 // - index: optional number to stagger entrance animation
@@ -21,6 +32,8 @@ export default function StatsCard({ title, value, icon = null, variant = "green"
     teal: { bg: '#2dd4bf', fg: '#fff' },
     yellow: { bg: '#fde047', fg: '#222' },
     pink: { bg: '#f472b6', fg: '#fff' },
+    indigo: { bg: '#818cf8', fg: '#fff' },
+    gray: { bg: '#d1d5db', fg: '#222' },
     default: { bg: '#e5e7eb', fg: '#222' }
   };
   const v = palette[variant] || palette.default;
@@ -67,7 +80,7 @@ export default function StatsCard({ title, value, icon = null, variant = "green"
           }}
           aria-hidden
         >
-          {icon}
+          {renderIcon(icon)}
         </div>
       )}
       <div className="stat-content" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
