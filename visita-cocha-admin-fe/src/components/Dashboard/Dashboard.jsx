@@ -162,7 +162,7 @@ export default function Dashboard() {
                 index={index}
                 title={stat.title}
                 value={stat.value}
-                icon={<i className={`fas ${stat.icon}`}></i>}
+                icon={stat.icon}
                 variant={stat.variant}
                 tooltip={`Total de ${stat.title.toLowerCase()}: ${stat.value}`}
               />
