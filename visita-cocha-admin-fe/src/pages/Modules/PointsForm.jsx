@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import * as api from '../../api';
+import LocationPickerMap from '../../components/UI/LocationPickerMap';
 import '../../styles/common.css';
 import '../../styles/forms.css';
 import '../../styles/categories.css';
@@ -114,6 +115,8 @@ const PointsForm = () => {
       categorias: formData.categories || [],
       tags: formData.mainCategories || [],
       direccion: formData.location?.address || '',
+      latitud: formData.location?.coords?.lat,
+      longitud: formData.location?.coords?.lng,
       barrio: '',
       ciudad: '',
       pais: '',
@@ -203,21 +206,24 @@ const PointsForm = () => {
         </div>
 
         <div className="form-section">
-          <h3>Ubicación</h3>
-          <div className="form-group">
-            <label htmlFor="location.address">Dirección</label>
-            <input type="text" id="location.address" name="location.address" value={formData.location.address} onChange={handleChange} className="form-control" />
-          </div>
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="location.coords.lat">Latitud</label>
-              <input type="text" id="location.coords.lat" name="location.coords.lat" value={formData.location.coords.lat} onChange={handleChange} className="form-control" placeholder="-17.39" />
-            </div>
-            <div className="form-group">
-              <label htmlFor="location.coords.lng">Longitud</label>
-              <input type="text" id="location.coords.lng" name="location.coords.lng" value={formData.location.coords.lng} onChange={handleChange} className="form-control" placeholder="-66.16" />
-            </div>
-          </div>
+          <LocationPickerMap
+            latitude={formData.location.coords.lat || -17.3895}
+            longitude={formData.location.coords.lng || -66.1568}
+            onLocationChange={(location) => {
+              setFormData(prev => ({
+                ...prev,
+                location: {
+                  ...prev.location,
+                  address: location.address,
+                  coords: {
+                    lat: location.lat,
+                    lng: location.lng
+                  }
+                }
+              }));
+            }}
+            label="📍 Ubicación en Cochabamba (haz click en el mapa)"
+          />
         </div>
 
         <div className="form-section">
