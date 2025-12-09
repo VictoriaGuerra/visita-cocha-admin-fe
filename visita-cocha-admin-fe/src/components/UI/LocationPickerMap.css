@@ -1,0 +1,136 @@
+.location-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #f8fafb 0%, #f0f4fa 100%);
+  border-radius: 0.75rem;
+  border: 1px solid rgba(45, 127, 62, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.location-picker > label {
+  font-weight: 700;
+  color: #2C3E50;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.location-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.input-group label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #606B82;
+}
+
+.input-group input {
+  padding: 0.75rem;
+  border: 1px solid #E8EBF0;
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+  font-family: 'Fira Code', monospace;
+  background-color: white;
+  transition: all 200ms ease;
+}
+
+.input-readonly {
+  background-color: #E8EBF0 !important;
+  cursor: not-allowed;
+  color: #A0A9B8;
+}
+
+.input-group input:not(.input-readonly) {
+  border-color: #2D7F3E;
+}
+
+.input-group input:not(.input-readonly):focus {
+  outline: none;
+  border-color: #2D7F3E;
+  box-shadow: 0 0 0 3px rgba(45, 127, 62, 0.1), 0 0 0 2px #2D7F3E;
+  background-color: white;
+}
+
+.input-group input:not(.input-readonly):hover {
+  border-color: #4CAF50;
+}
+
+.map-container {
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  margin: 0.5rem 0;
+  border: 1px solid rgba(45, 127, 62, 0.1);
+}
+
+.map-container :global(.leaflet-container) {
+  background-color: #f0f0f0;
+  font-family: 'Poppins', sans-serif;
+}
+
+.map-container :global(.leaflet-control-attribution) {
+  display: none;
+}
+
+.map-hint {
+  font-size: 0.85rem;
+  color: #606B82;
+  padding: 0.75rem 1rem;
+  background: #E8F4F8;
+  border-left: 3px solid #2D7F3E;
+  border-radius: 0.4rem;
+  margin-top: 0.5rem;
+  font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .location-inputs {
+    grid-template-columns: 1fr;
+  }
+
+  .location-picker {
+    padding: 1rem;
+  }
+
+  .map-container :global(.leaflet-container) {
+    height: 300px !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .location-picker {
+    padding: 0.75rem;
+    gap: 1rem;
+  }
+
+  .location-picker > label {
+    font-size: 0.9rem;
+  }
+
+  .input-group label {
+    font-size: 0.85rem;
+  }
+
+  .input-group input {
+    font-size: 0.85rem;
+    padding: 0.6rem;
+  }
+
+  .map-container :global(.leaflet-container) {
+    height: 250px !important;
+  }
+}

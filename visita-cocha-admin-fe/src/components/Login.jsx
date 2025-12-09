@@ -206,9 +206,6 @@ export default function Login() {
             Olvidé mi contraseña
           </a>
         </div>
-        <div className="login-footer">
-          <img src={logo} alt="Escudo Cocha" className="cocha-shield" />
-        </div>
       </div>
       {showForgot && <ForgotModal />}
     </div>
