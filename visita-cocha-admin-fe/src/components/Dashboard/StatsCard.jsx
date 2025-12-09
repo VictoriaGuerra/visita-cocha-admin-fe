@@ -7,6 +7,11 @@ import Tooltip from '../../components/Tooltip';
 const renderIcon = (iconClass) => {
   if (!iconClass) return null;
   
+  // Si no es string, convertir a string
+  if (typeof iconClass !== 'string') {
+    return iconClass;
+  }
+  
   // Convertir de formato simple (ej: 'fa-users') a clases completas (ej: 'fas fa-users')
   const iconString = iconClass.includes('fa-') ? iconClass : `fa-${iconClass}`;
   const fullClass = iconString.startsWith('fa-') ? `fas ${iconString}` : iconString;
