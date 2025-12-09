@@ -1,11 +1,11 @@
 /* // src/styles/login.css */
 @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css');
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
 
 body.login-active {
   position: relative; 
   margin: 0;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Poppins', sans-serif !important;
   overflow: hidden; 
   z-index: 1; 
   background: radial-gradient(1200px 600px at 10% 10%, rgba(255,255,255,0.25) 0%, transparent 60%),
@@ -96,6 +96,11 @@ body.login-active::before {
     text-align: center;
     margin-top: 10px;
     align-items: center;
+    display: none !important;
+}
+
+.login-footer {
+    display: none !important;
 }
 
 

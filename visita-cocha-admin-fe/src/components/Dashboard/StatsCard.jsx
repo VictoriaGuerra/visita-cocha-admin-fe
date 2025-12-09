@@ -38,13 +38,16 @@ export default function StatsCard({ title, value, icon = null, variant = "green"
         borderRadius: 18,
         boxShadow: '0 2px 8px rgba(63,144,142,0.07)',
         display: 'flex',
+        flexDirection: 'column',
         alignItems: 'center',
-        gap: 18,
-        padding: '18px 28px',
+        justifyContent: 'center',
+        gap: 8,
+        padding: '18px 16px',
         animationDelay: delay,
         marginBottom: 0,
         position: 'relative',
         transition: 'box-shadow 0.18s',
+        textAlign: 'center',
       }}
     >
       {icon && (
@@ -53,12 +56,12 @@ export default function StatsCard({ title, value, icon = null, variant = "green"
             background: v.bg,
             color: v.fg,
             borderRadius: '50%',
-            width: 54,
-            height: 54,
+            width: 48,
+            height: 48,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: 30,
+            fontSize: 24,
             boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
             flexShrink: 0,
           }}
@@ -67,16 +70,16 @@ export default function StatsCard({ title, value, icon = null, variant = "green"
           {icon}
         </div>
       )}
-      <div className="stat-content" style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span className="stat-label" style={{ fontWeight: 600, fontSize: 17, color: '#444', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</span>
+      <div className="stat-content" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>
+          <span className="stat-label" style={{ fontWeight: 500, fontSize: 12, color: '#666', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</span>
           {tooltip && (
             <Tooltip text={tooltip}>
-              <span className="stat-tooltip" aria-hidden style={{ color: '#888', fontSize: 16, marginLeft: 2, cursor: 'pointer' }}>ℹ</span>
+              <span className="stat-tooltip" aria-hidden style={{ color: '#888', fontSize: 14, marginLeft: 2, cursor: 'pointer' }}>ℹ</span>
             </Tooltip>
           )}
         </div>
-        <div style={{ fontWeight: 700, fontSize: 32, color: '#222', marginTop: 2 }}>{formatted}</div>
+        <div style={{ fontWeight: 700, fontSize: 24, color: '#222', marginTop: 4 }}>{formatted}</div>
       </div>
     </div>
   );
