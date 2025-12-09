@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import * as api from '../../api';
+import LocationPickerMap from '../../components/UI/LocationPickerMap';
 import '../../styles/common.css';
 import '../../styles/forms.css';
 import '../../styles/categories.css';
@@ -437,45 +438,24 @@ const AttractionForm = () => {
         <div className="form-section">
           <h3>Ubicación</h3>
           
-          <div className="form-group">
-            <label htmlFor="location.address">Dirección</label>
-            <input
-              type="text"
-              id="location.address"
-              name="location.address"
-              value={formData.location.address}
-              onChange={handleChange}
-              className="form-control"
-            />
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="location.coords.lat">Latitud</label>
-              <input
-                type="text"
-                id="location.coords.lat"
-                name="location.coords.lat"
-                value={formData.location.coords.lat}
-                onChange={handleChange}
-                className="form-control"
-                placeholder="-17.401160047869425"
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="location.coords.lng">Longitud</label>
-              <input
-                type="text"
-                id="location.coords.lng"
-                name="location.coords.lng"
-                value={formData.location.coords.lng}
-                onChange={handleChange}
-                className="form-control"
-                placeholder="-66.16145219131906"
-              />
-            </div>
-          </div>
+          <LocationPickerMap
+            latitude={formData.location.coords.lat || -17.3895}
+            longitude={formData.location.coords.lng || -66.1568}
+            onLocationChange={(location) => {
+              setFormData(prev => ({
+                ...prev,
+                location: {
+                  ...prev.location,
+                  address: location.address,
+                  coords: {
+                    lat: location.lat,
+                    lng: location.lng
+                  }
+                }
+              }));
+            }}
+            label="📍 Ubicación en Cochabamba (haz click en el mapa)"
+          />
         </div>
 
         {/* Contacto */}
