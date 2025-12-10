@@ -12,6 +12,9 @@
   overflow: hidden;
 }
 
+/* Ensure main content stays to the right of the sidebar consistently */
+.main-content { margin-left: var(--sidebar-width); }
+
 .user-header {
   height: var(--header-height);
   background: var(--surface);
@@ -94,3 +97,14 @@
     padding: 0 1rem;
   }
 }
+
+/* Debug helpers (temporary) - activate by running in DevTools console:
+   document.body.classList.add('vc-debug')
+   remove with: document.body.classList.remove('vc-debug')
+*/
+.vc-debug .user-header { outline: 3px dashed rgba(255,0,0,0.6); background: rgba(255,0,0,0.02); }
+.vc-debug .main-content { outline: 3px dashed rgba(0,128,255,0.5); }
+.vc-debug .content-wrapper { outline: 3px dashed rgba(0,200,0,0.5); }
+.vc-debug .sidebar { outline: 3px dashed rgba(200,128,0,0.6); }
+.vc-debug .dashboard-header { outline: 3px dashed rgba(128,0,200,0.6); }
+.vc-debug .stats-panel { outline: 3px dashed rgba(0,0,0,0.2); }

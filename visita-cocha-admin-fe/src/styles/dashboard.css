@@ -225,14 +225,13 @@
 /* Header */
 .header-container {
   background-color: #fff;
-  padding: 18px 32px;
+  padding: 12px 32px;
   box-shadow: var(--shadow);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  position: sticky;
-  top: 0;
-  z-index: 20;
+  position: relative; /* no sticky: prevents overlay/offset conflicts with global header */
+  z-index: 10;
   border-bottom: 1px solid var(--border-color);
 }
 
