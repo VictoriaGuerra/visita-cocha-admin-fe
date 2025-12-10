@@ -20,3 +20,24 @@ optgroup,
 option {
   font-family: 'Poppins', sans-serif !important;
 }
+
+/* Fix: Font Awesome icons can be overridden by the global font rule above.
+   Restore the proper font-family for common FA classes so icons render. */
+.fa,
+.fas,
+.far,
+.fal,
+.fab,
+.fa-solid,
+.fa-regular,
+.fa-brands,
+i[class*="fa-"],
+[class*=" fa-"] {
+  font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands" !important;
+  font-weight: 900 !important;
+  speak: none;
+  font-style: normal;
+}
+
+/* Brands use a separate family and weight */
+.fab, .fa-brands { font-family: "Font Awesome 6 Brands" !important; font-weight: 400 !important; }

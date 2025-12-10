@@ -12,11 +12,12 @@ const renderIcon = (iconClass) => {
     return iconClass;
   }
   
-  // Convertir de formato simple (ej: 'fa-users') a clases completas (ej: 'fas fa-users')
+  // Convertir de formato simple (ej: 'fa-users') a clases completas.
+  // Usar prefijo moderno `fa-solid` (FA6) y dejar compatibilidad con nombres `fa-...`.
   const iconString = iconClass.includes('fa-') ? iconClass : `fa-${iconClass}`;
-  const fullClass = iconString.startsWith('fa-') ? `fas ${iconString}` : iconString;
-  
-  return <i className={fullClass}></i>;
+  const fullClass = iconString.startsWith('fa-') ? `fa-solid ${iconString}` : iconString;
+
+  return <i className={fullClass} aria-hidden="true"></i>;
 };
 
 // StatsCard: uses classes defined in src/styles/dashboard.css
@@ -47,57 +48,26 @@ export default function StatsCard({ title, value, icon = null, variant = "green"
   const delay = typeof index === 'number' ? `${index * 80}ms` : undefined;
 
   return (
-    <div
-      className="stat-card stat-enter"
-      style={{
-        minWidth: 180,
-        minHeight: 100,
-        background: '#fff',
-        borderRadius: 18,
-        boxShadow: '0 2px 8px rgba(63,144,142,0.07)',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 8,
-        padding: '18px 16px',
-        animationDelay: delay,
-        marginBottom: 0,
-        position: 'relative',
-        transition: 'box-shadow 0.18s',
-        textAlign: 'center',
-      }}
-    >
+    <div className="stats-card stat-enter" style={{ animationDelay: delay }}>
       {icon && (
         <div
-          style={{
-            background: v.bg,
-            color: v.fg,
-            borderRadius: '50%',
-            width: 48,
-            height: 48,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 24,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
-            flexShrink: 0,
-          }}
+          className="icon-circle"
+          style={{ background: v.bg, color: v.fg }}
           aria-hidden
         >
           {renderIcon(icon)}
         </div>
       )}
-      <div className="stat-content" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>
-          <span className="stat-label" style={{ fontWeight: 500, fontSize: 12, color: '#666', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</span>
+      <div className="stat-content">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center', width: '100%' }}>
+          <span className="stat-label">{title}</span>
           {tooltip && (
             <Tooltip text={tooltip}>
-              <span className="stat-tooltip" aria-hidden style={{ color: '#888', fontSize: 14, marginLeft: 2, cursor: 'pointer' }}>ℹ</span>
+              <span className="stat-tooltip" aria-hidden>ℹ</span>
             </Tooltip>
           )}
         </div>
-        <div style={{ fontWeight: 700, fontSize: 24, color: '#222', marginTop: 4 }}>{formatted}</div>
+        <div className="stat-value">{formatted}</div>
       </div>
     </div>
   );
